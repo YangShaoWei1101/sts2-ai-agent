@@ -752,6 +752,14 @@ def card_resource_gain(card: "dict[str, Any]", state: "dict[str, Any] | None"=No
     return 0
 
 
+def card_is_turn_only_dexterity_setup(card: "dict[str, Any]") -> "bool":
+    cid = normalized_card_id(card)
+    if cid == "ANTICIPATE":
+        return True
+    blob = card_rules_blob(card)
+    return "dexterity" in blob and ("this turn" in blob or "until end of turn" in blob)
+
+
 def card_doubles_energy(card: "dict[str, Any]") -> "bool":
     cid = normalized_card_id(card)
     if cid == "DOUBLE_ENERGY":
@@ -1253,6 +1261,38 @@ def affordable_non_potion_card_value(cards: "list[dict[str, Any]]", state: "dict
         block_value += estimate_card_block(card) + attack_relic_block(card, state)
         damage_value += combat_card_damage(card, state) + generated_card_damage(card)
     return spendable, block_value, damage_value
+
+
+def immediate_dex_potion_block_gain(cards: "list[dict[str, Any]]", state: "dict[str, Any]", *, energy: int, dex_gain: int) -> "int":
+    block_cards = []
+    for card in cards:
+        if card.get("playable") is False:
+            continue
+        if estimate_card_block(card) + attack_relic_block(card, state) <= 0:
+            continue
+        if card_has_consuming_or_harmful_cost(card, state):
+            continue
+        cost = combat_card_energy_cost(card, state)
+        if cost < 0 or cost > energy:
+            continue
+        block_cards.append((max(0, cost), dex_gain))
+
+    block_cards.sort(key=(lambda p: (p[1] / max(1, p[0]), p[1])), reverse=True)
+    total = 0
+    energy_left = energy
+    free_picks = 0
+    for cost, gain in block_cards:
+        if cost == 0:
+            if free_picks >= 4:
+                continue
+            free_picks += 1
+        elif cost > energy_left:
+            continue
+        else:
+            energy_left -= cost
+        total += gain
+
+    return total
 
 
 def remaining_affordable_block(cards, card=None, *, remaining_energy, state=None):
@@ -1960,6 +2000,14 @@ def card_setup_value(card: "dict[str, Any]", state: "dict[str, Any]", cards: "li
     if damage or block:
         return (
          0.0, reasons)
+
+    if card_is_turn_only_dexterity_setup(card):
+        if incoming <= current_block or not has_followup_block:
+            score -= 34
+            reasons.append("skip-low-value-turn-dex")
+        elif incoming <= current_block + 4 and not plan.needs_block:
+            score -= 18
+            reasons.append("small-turn-dex-window")
 
     if draws_cards:
         draw_bonus = 22 if cards_played == 0 else 12
@@ -3897,7 +3945,10 @@ def choose_potion_action(state: "dict[str, Any]", actions: "set[str]") -> "tuple
                 if defensive_potion:
                     score += 45 + damage_gap
                     if speed_like_potion or dex_like_potion:
-                        dex_block_gain = playable_block_cards * (5 if speed_like_potion else 2)
+                        dex_gain = 5 if speed_like_potion else 2
+                        dex_block_gain = immediate_dex_potion_block_gain(playable, state, energy=energy_now, dex_gain=dex_gain)
+                        base_block_prevented = min(damage_gap, playable_block_now)
+                        immediate_damage_prevented = max(0, min(damage_gap, playable_block_now + dex_block_gain) - base_block_prevented)
                         if hand_block > 0:
                             score += min(36, dex_block_gain + hand_block * 0.7)
                         else:
@@ -3912,6 +3963,14 @@ def choose_potion_action(state: "dict[str, Any]", actions: "set[str]") -> "tuple
                             score -= 42
                             if not boss_like_combat:
                                 score -= 34
+                        if not danger and not boss_pressure:
+                            min_prevented = policy_number("potion.dex_noncrisis_min_prevented", 6.0)
+                            if immediate_damage_prevented <= 0:
+                                score -= policy_number("potion.dex_noncrisis_no_prevented_penalty", 70.0)
+                            elif damage_gap < 10 and immediate_damage_prevented < damage_gap:
+                                score -= policy_number("potion.dex_noncrisis_partial_chip_penalty", 46.0)
+                            elif immediate_damage_prevented < min_prevented:
+                                score -= policy_number("potion.dex_noncrisis_low_prevented_penalty", 34.0)
                     elif boss_pressure:
                         score += 16
                     if boss_like_combat and not speed_like_potion and incoming <= 0 and ratio <= 0.85:
@@ -4670,10 +4729,8 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
             state=state,
             current_block=current_block,
         ):
-            if enemy_punishes_extra_card_play(state, card):
-                score -= 25
-            else:
-                score += 2
+            score -= 18 if not enemy_punishes_extra_card_play(state, card) else 35
+            reasons.append("skip-covered-pure-block")
         if cost >= 3 and target is not None and target_hp is not None and dmg < target_hp:
             score -= 8
         if is_bloodletting(card):
@@ -4818,6 +4875,9 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     if incoming <= current_block and best_is_pure_block and not best_safe_spend:
         return (
          "end_turn", {}, f"incoming already blocked; skip unsafe pure block score={best_score:.1f}")
+    if incoming <= current_block and best_is_pure_block:
+        return (
+         "end_turn", {}, f"incoming already blocked; skip pure block score={best_score:.1f}")
     if passive_block and incoming <= baseline_block and best_is_pure_block and best_block <= passive_block:
         return (
          "end_turn", {}, f"orichalcum covers damage; skip weak block score={best_score:.1f}")
@@ -4857,6 +4917,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and not turn_strength_meaningful_save
         and not best_would_die
         and not can_sweep_lethal
+        and best_remaining_block <= 0
     ):
         return (
          "end_turn", {}, f"save turn strength debuff for larger attack saved={best_incoming_reduced_by} score={best_score:.1f}")

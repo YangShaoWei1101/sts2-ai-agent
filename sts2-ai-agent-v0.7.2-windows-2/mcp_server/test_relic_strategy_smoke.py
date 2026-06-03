@@ -355,6 +355,38 @@ def main() -> int:
     }
     assert ai.choose_potion_action(boss_prep_fire_potion_state, {"use_potion"}) is None
 
+    silent_chip_speed_potion_state = {
+        "screen": "COMBAT",
+        "available_actions": ["use_potion", "play_card", "end_turn"],
+        "combat": {
+            "energy": 3,
+            "player": {"block": 0},
+            "hand": [
+                {"index": 0, "id": "SURVIVOR", "name": "Survivor", "type": "Skill", "cost": 1, "block": 8, "playable": True},
+                {"index": 1, "id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "cost": 0, "damage": 3, "playable": True, "requires_target": True},
+                {"index": 2, "id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "cost": 1, "block": 5, "playable": True},
+                {"index": 3, "id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "cost": 1, "damage": 6, "playable": True, "requires_target": True},
+                {"index": 4, "id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "cost": 1, "block": 5, "playable": True},
+                {"index": 5, "id": "ACCURACY", "name": "Accuracy", "type": "Power", "cost": 1, "playable": True},
+                {"index": 6, "id": "PIERCING_WAIL", "name": "Piercing Wail", "type": "Skill", "cost": 1, "description": "ALL enemies lose 6 Strength this turn. Exhaust.", "playable": True},
+            ],
+            "enemies": [
+                {"index": 0, "id": "TOADPOLE", "hp": 25, "block": 0, "intent": "Attack 0"},
+                {"index": 1, "id": "TOADPOLE", "hp": 24, "block": 0, "intent": "Attack 7"},
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 5,
+            "current_hp": 37,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+            "potions": [{"index": 0, "id": "SPEED_POTION", "occupied": True}],
+        },
+    }
+    assert ai.choose_potion_action(silent_chip_speed_potion_state, {"use_potion"}) is None
+
     crisis_explosive_state = {
         **high_hp_explosive_state,
         "combat": {
@@ -1113,7 +1145,7 @@ def main() -> int:
         "run": {**orichalcum_state["run"], "relics": []},
     }
     combat_action, _, reason = ai.choose_combat_action(no_pressure_block_state)
-    assert combat_action == "play_card", reason
+    assert combat_action == "end_turn", reason
 
     covered_block_state = {
         **orichalcum_state,
@@ -1137,7 +1169,7 @@ def main() -> int:
         "run": {**orichalcum_state["run"], "character_id": "SILENT", "relics": []},
     }
     combat_action, _, reason = ai.choose_combat_action(covered_block_state)
-    assert combat_action == "play_card", reason
+    assert combat_action == "end_turn", reason
 
     covered_functional_block_state = {
         **covered_block_state,
@@ -1192,7 +1224,7 @@ def main() -> int:
         },
     }
     combat_action, _, reason = ai.choose_combat_action(no_pressure_survivor_state)
-    assert combat_action == "play_card", reason
+    assert combat_action == "end_turn", reason
 
     survivor_cleans_status_state = {
         **no_pressure_survivor_state,
@@ -1539,7 +1571,7 @@ def main() -> int:
         },
     }
     combat_action, _, reason = ai.choose_combat_action(regent_no_pressure_block_state)
-    assert combat_action == "play_card", reason
+    assert combat_action == "end_turn", reason
 
     untouchable_no_pressure_state = {
         **regent_no_pressure_block_state,
@@ -1801,6 +1833,32 @@ def main() -> int:
     }
     combat_action, _, reason = ai.choose_combat_action(small_attack_wail_state)
     assert combat_action == "end_turn", reason
+
+    small_attack_wail_with_block_state = {
+        **small_attack_wail_state,
+        "combat": {
+            **small_attack_wail_state["combat"],
+            "energy": 2,
+            "hand": [
+                small_attack_wail_state["combat"]["hand"][0],
+                {
+                    "index": 1,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+            ],
+            "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 60, "intent": "Attack 7"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(small_attack_wail_with_block_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] == 1, reason
 
     print("relic strategy smoke test passed")
     return 0

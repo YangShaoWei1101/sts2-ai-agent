@@ -1544,6 +1544,56 @@ def main() -> int:
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 1
 
+    lethal_sequence_before_death_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 3,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "DAGGER_SPRAY",
+                    "name": "Dagger Spray",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": False,
+                    "description": "Deal 4 damage to ALL enemies.",
+                    "target": "AllEnemies",
+                },
+                {
+                    "index": 1,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 8,
+                    "playable": True,
+                    "requires_target": True,
+                },
+            ],
+            "enemies": [{"index": 0, "id": "BYGONE_EFFIGY", "hp": 12, "intent": "Attack 17"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 14,
+            "current_hp": 5,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    assert ai.hand_has_affordable_lethal_sequence(
+        ai.playable_cards(lethal_sequence_before_death_state),
+        lethal_sequence_before_death_state,
+        energy=3,
+    )
+    combat_action, kwargs, reason = ai.choose_combat_action(lethal_sequence_before_death_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] in {0, 1}, reason
+
     regent_no_pressure_block_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

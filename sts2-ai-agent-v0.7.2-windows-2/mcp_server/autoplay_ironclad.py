@@ -1713,6 +1713,60 @@ def choose_enemy_for_damage(enemies: "list[dict[str, Any]]", damage: "int") -> "
      -enemy_hp(p[1]))))[0]
 
 
+def hand_has_affordable_lethal_sequence(cards: "list[dict[str, Any]]", state: "dict[str, Any]", *, energy: int) -> "bool":
+    enemies = [(i, enemy_hp(enemy)) for i, enemy in enumerate((state.get("combat") or {}).get("enemies") or []) if enemy_alive(enemy)]
+    if not enemies:
+        return False
+    attacks = []
+    for card in cards:
+        if card.get("playable") is False:
+            continue
+        if card_has_unmet_play_condition(card, state):
+            continue
+        if enemy_punishes_extra_card_play(state, card):
+            continue
+        if card_has_consuming_or_harmful_cost(card, state):
+            continue
+        damage = combat_card_damage(card, state)
+        if damage <= 0:
+            continue
+        cost = combat_card_energy_cost(card, state)
+        if cost < 0 or cost > energy:
+            continue
+        attacks.append((max(0, cost), damage, card_hits_all_enemies(card)))
+
+    if not attacks:
+        return False
+    attacks.sort(key=(lambda item: (item[2], item[1] / max(1, item[0]), item[1])), reverse=True)
+
+    def search(enemy_hps: "tuple[int, ...]", energy_left: int, remaining: "tuple[tuple[int, int, bool], ...]") -> bool:
+        if all(hp <= 0 for hp in enemy_hps):
+            return True
+        if not remaining:
+            return False
+        if sum(damage for cost, damage, _ in remaining if cost <= energy_left) < max(0, sum(hp for hp in enemy_hps if hp > 0)):
+            return False
+        for idx, (cost, damage, hits_all) in enumerate(remaining):
+            if cost > energy_left:
+                continue
+            rest = remaining[:idx] + remaining[idx + 1:]
+            if hits_all:
+                next_hps = tuple(max(0, hp - damage) for hp in enemy_hps)
+                if search(next_hps, energy_left - cost, rest):
+                    return True
+            else:
+                for enemy_idx, hp in enumerate(enemy_hps):
+                    if hp <= 0:
+                        continue
+                    next_hps = list(enemy_hps)
+                    next_hps[enemy_idx] = max(0, hp - damage)
+                    if search(tuple(next_hps), energy_left - cost, rest):
+                        return True
+        return False
+
+    return search(tuple(hp for _, hp in enemies), energy, tuple(attacks[:8]))
+
+
 def is_attack(card: "dict[str, Any]") -> "bool":
     blob = text_blob(card)
     return estimate_card_damage(card) > 0 or "attack" in blob or "攻击" in blob
@@ -4327,7 +4381,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     energy = player_energy(state)
     total_attack_damage = sum((combat_card_damage(c, state) for c in cards if is_attack(c) or combat_card_damage(c, state) > 0))
     alive_hp = sum((enemy_hp(e) for e in enemies if enemy_alive(e)))
-    can_sweep_lethal = bool(alive_hp and total_attack_damage >= alive_hp)
+    can_sweep_lethal = hand_has_affordable_lethal_sequence(cards, state, energy=energy)
     passive_block = passive_end_turn_block(state, current_block)
     baseline_block = current_block + passive_block
     damage_gap = max(0, incoming - baseline_block)

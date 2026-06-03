@@ -1744,6 +1744,74 @@ def main() -> int:
         silent_stalled_boss_state,
     )
 
+    silent_boss_damage_starved_state = {
+        "run": {
+            "character_id": "SILENT",
+            "floor": 16,
+            "current_hp": 46,
+            "max_hp": 70,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(2)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1},
+                    {"id": "ACCURACY", "name": "Accuracy", "type": "Power", "rarity": "Uncommon", "cost": 1},
+                    {"id": "PIERCING_WAIL", "name": "Piercing Wail", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "CLOAK_AND_DAGGER", "name": "Cloak and Dagger", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "MALAISE", "name": "Malaise", "type": "Skill", "rarity": "Uncommon", "cost": -1},
+                    {"id": "DAGGER_THROW", "name": "Dagger Throw", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "CLOAK_AND_DAGGER", "name": "Cloak and Dagger", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "ANTICIPATE", "name": "Anticipate", "type": "Skill", "rarity": "Common", "cost": 0},
+                    {"id": "PREPARED", "name": "Prepared", "type": "Skill", "rarity": "Common", "cost": 0},
+                    {"id": "DAGGER_THROW", "name": "Dagger Throw", "type": "Attack", "rarity": "Common", "cost": 1},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "PRECARIOUS_SHEARS", "name": "Precarious Shears"},
+                {"id": "HAPPY_FLOWER", "name": "Happy Flower"},
+            ],
+        }
+    }
+    damage_starved_plan = ai.deck_plan(silent_boss_damage_starved_state)
+    assert damage_starved_plan.needs_damage, damage_starved_plan.summary()
+    poison_stab_reward = {
+        "id": "POISONED_STAB",
+        "name": "Poisoned Stab",
+        "type": "Attack",
+        "rarity": "Common",
+        "cost": 1,
+        "damage": 6,
+        "description": "Deal 6 damage. Apply 3 Poison.",
+    }
+    dodge_reward = {
+        "id": "DODGE_AND_ROLL",
+        "name": "Dodge and Roll",
+        "type": "Skill",
+        "rarity": "Common",
+        "cost": 1,
+        "block": 4,
+        "description": "Gain 4 Block. Next turn, gain 4 Block.",
+    }
+    backflip_reward = {
+        "id": "BACKFLIP",
+        "name": "Backflip",
+        "type": "Skill",
+        "rarity": "Common",
+        "cost": 1,
+        "block": 5,
+        "description": "Gain 5 Block. Draw 2 cards.",
+    }
+    assert ai.score_reward_card(poison_stab_reward, silent_boss_damage_starved_state) > ai.score_reward_card(
+        dodge_reward,
+        silent_boss_damage_starved_state,
+    )
+    assert ai.score_reward_card(boss_damage_reward, silent_boss_damage_starved_state) > ai.score_reward_card(
+        backflip_reward,
+        silent_boss_damage_starved_state,
+    )
+
     pressure_anticipate_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

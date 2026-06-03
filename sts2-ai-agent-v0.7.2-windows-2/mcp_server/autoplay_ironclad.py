@@ -160,6 +160,20 @@ SILENT_WHOLE_HAND_DISCARD_IDS = {
  "CALCULATED_GAMBLE",
  "SHADOW_STEP",
  "STORM_OF_STEEL"}
+SILENT_LOW_DAMAGE_DEFENSE_REWARD_IDS = {
+ "ANTICIPATE",
+ "BACKFLIP",
+ "DEFLECT",
+ "DODGE_AND_ROLL",
+ "PREPARED",
+ "UNTOUCHABLE"}
+SILENT_PREMIUM_SURVIVAL_REWARD_IDS = {
+ "BLUR",
+ "FOOTWORK",
+ "LEG_SWEEP",
+ "MALAISE",
+ "PIERCING_WAIL",
+ "WRAITH_FORM"}
 STATUS_BAGGAGE_IDS = {
  'BURN', 
  'CLUMSY', 
@@ -4946,6 +4960,13 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
     floor = first_number(run.get("floor") or run.get("current_floor")) or 0
     character_id = str(run.get("character_id") or run.get("character") or "").upper()
     boss_prep = floor >= 28 or floor in {12, 13, 14, 15, 16, 30, 31, 32, 46, 47, 48}
+    silent_damage_starved = bool(
+        character_id == "SILENT"
+        and plan.needs_damage
+        and plan.card_count >= 15
+        and not plan.needs_block
+        and not plan.needs_draw
+    )
     score = 0.0
     score += dmg * 1.6 + block * 1.1
     if "body_slam" in cid:
@@ -5021,18 +5042,24 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
     if (
         character_id == "SILENT"
         and plan.needs_damage
-        and plan.block_count >= 9
+        and plan.block_count >= 8
         and plan.card_count >= 16
         and not silent_damage_card
         and roles & {"block", "draw"}
         and not (roles & {"weak", "vulnerable", "debuff", "block_retention", "intangible"})
     ):
         duplicate_count = int(plan.ids.get(cid_norm, 0) or 0)
-        penalty = 18.0 + min(18.0, max(0, plan.block_count - 8) * 3.0)
+        penalty = 24.0 + min(24.0, max(0, plan.block_count - 7) * 4.0)
         if duplicate_count:
             penalty += min(24.0, duplicate_count * 8.0)
         if plan.primary_archetype == "si_defense_control":
-            penalty += 8.0
+            penalty += 12.0
+        if not plan.needs_block:
+            penalty += 14.0
+        if not plan.needs_draw and "draw" in roles:
+            penalty += 10.0
+        if cid_norm in SILENT_LOW_DAMAGE_DEFENSE_REWARD_IDS:
+            penalty += 18.0
         score -= penalty
         reasons.append(f"silent-damage-before-more-defense={penalty:.0f}")
     if card_costs_x(card):
@@ -5097,15 +5124,25 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
                 "PIERCING_WAIL",
                 "WRAITH_FORM",
             }
-            if cid_norm in silent_block_ids or roles & {"block_retention", "weak", "debuff", "strength"}:
+            low_damage_survival = cid_norm in SILENT_LOW_DAMAGE_DEFENSE_REWARD_IDS and not (
+                roles & {"weak", "vulnerable", "debuff", "block_retention", "intangible"}
+            )
+            if (cid_norm in silent_block_ids or roles & {"block_retention", "weak", "debuff", "strength"}) and not (
+                silent_damage_starved and low_damage_survival
+            ):
                 survival_bonus += 16.0
                 reasons.append("silent-boss-survival")
             if cid_norm == "BLUR":
                 survival_bonus += 34.0
                 reasons.append("silent-boss-blur")
             if cid_norm == "DODGE_AND_ROLL":
-                survival_bonus += 26.0
-                reasons.append("silent-boss-next-turn-block")
+                if silent_damage_starved:
+                    dodge_penalty = 28.0 + (12.0 if plan.primary_archetype == "si_defense_control" else 0.0)
+                    score -= dodge_penalty
+                    reasons.append(f"silent-damage-before-dodge={dodge_penalty:.0f}")
+                else:
+                    survival_bonus += 26.0
+                    reasons.append("silent-boss-next-turn-block")
             if cid_norm in {"PIERCING_WAIL", "LEG_SWEEP", "MALAISE"}:
                 survival_bonus += 36.0
                 reasons.append("silent-boss-debuff")

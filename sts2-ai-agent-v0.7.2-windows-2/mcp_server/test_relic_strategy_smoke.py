@@ -426,6 +426,50 @@ def main() -> int:
     rest_idx, _ = ai.choose_rest_index(rest_state)
     assert rest_idx == 0
 
+    silent_campfire_state = {
+        "screen": "REST",
+        "available_actions": ["choose_rest_option"],
+        "run": {
+            "character_id": "SILENT",
+            "floor": 9,
+            "current_hp": 51,
+            "max_hp": 70,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0, "damage": 3},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                    {"id": "DAGGER_THROW", "name": "Dagger Throw", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 9},
+                    {"id": "CLOAK_AND_DAGGER", "name": "Cloak and Dagger", "type": "Skill", "rarity": "Common", "cost": 1, "block": 6},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "HAPPY_FLOWER", "name": "Happy Flower"},
+            ],
+        },
+        "rest": {
+            "options": [
+                {"index": 0, "option_id": "HEAL", "title": "Rest"},
+                {"index": 1, "option_id": "SMITH", "title": "Smith"},
+            ]
+        },
+    }
+    smith_idx, smith_target = ai.choose_rest_index(silent_campfire_state)
+    assert smith_idx == 1
+    assert smith_target is not None
+
+    low_hp_campfire_state = {
+        **silent_campfire_state,
+        "run": {
+            **silent_campfire_state["run"],
+            "current_hp": 36,
+        },
+    }
+    low_hp_rest_idx, _ = ai.choose_rest_index(low_hp_campfire_state)
+    assert low_hp_rest_idx == 0
+
     whisper_state = {
         "screen": "EVENT",
         "available_actions": ["choose_event_option"],

@@ -5745,6 +5745,56 @@ def choose_event_index(state: "dict[str, Any]") -> "int":
     return int(scored[0][1])
 
 
+SILENT_CAMPFIRE_KEY_UPGRADE_IDS = {
+    "ACCURACY",
+    "BACKFLIP",
+    "BLADE_DANCE",
+    "CLOAK_AND_DAGGER",
+    "DAGGER_SPRAY",
+    "DAGGER_THROW",
+    "FOOTWORK",
+    "LEG_SWEEP",
+    "MALAISE",
+    "NEUTRALIZE",
+    "NOXIOUS_FUMES",
+    "PIERCING_WAIL",
+    "POISONED_STAB",
+    "SURVIVOR",
+    "TERROR",
+}
+
+
+def deck_card_for_effective_index(state: "dict[str, Any]", target: "int | None") -> "dict[str, Any] | None":
+    if target is None:
+        return None
+    run = state.get("run") or {}
+    deck = run.get("deck") or run.get("cards") or []
+    if not isinstance(deck, list):
+        return None
+    for i, card in enumerate(deck):
+        if not isinstance(card, dict):
+            continue
+        idx = first_number(card.get("index") or card.get("i"))
+        if int(target) == int(i if idx is None else idx):
+            return card
+    if 0 <= int(target) < len(deck) and isinstance(deck[int(target)], dict):
+        return deck[int(target)]
+    return None
+
+
+def campfire_upgrade_value(state: "dict[str, Any]", target: "int | None") -> "tuple[float, str]":
+    card = deck_card_for_effective_index(state, target)
+    if card is None:
+        return 0.0, ""
+    value = max(0.0, upgrade_selection_score(card, state))
+    cid = normalized_card_id(card)
+    run = state.get("run") or {}
+    character_id = str(run.get("character_id") or run.get("character") or "").upper()
+    if character_id == "SILENT" and cid in SILENT_CAMPFIRE_KEY_UPGRADE_IDS:
+        value += 10.0
+    return value, cid
+
+
 def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
     hp, max_hp = player_hp(state)
     ratio = hp / max_hp if (hp and max_hp) else 1.0
@@ -5752,6 +5802,7 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
     plan = deck_plan(state)
     profile = relic_profile(state)
     run = state.get("run") or {}
+    character_id = str(run.get("character_id") or run.get("character") or "").upper()
     floor = first_number(run.get("floor") or run.get("current_floor")) or 0
     deck_ids = {
         normalized_card_id(card)
@@ -5759,6 +5810,10 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
         if isinstance(card, dict)
     }
     has_byrdonis_egg = "BYRDONIS_EGG" in deck_ids
+    upgrade_target = choose_upgrade_target(state)
+    upgrade_value, upgrade_card_id = campfire_upgrade_value(state, upgrade_target)
+    strong_upgrade = upgrade_value >= (42.0 if character_id == "SILENT" else 50.0)
+    solid_upgrade = upgrade_value >= (28.0 if character_id == "SILENT" else 36.0)
     safe_smith_ratio = 0.72
     if profile.combat_strength >= 18 and plan.combat_ready:
         safe_smith_ratio -= 0.04
@@ -5768,6 +5823,11 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
         safe_smith_ratio += 0.03
     if floor >= 12 and ratio < 0.72:
         safe_smith_ratio += 0.03
+    if strong_upgrade:
+        safe_smith_ratio -= 0.08 if character_id == "SILENT" else 0.04
+    elif solid_upgrade and (character_id == "SILENT" or plan.combat_ready):
+        safe_smith_ratio -= 0.04 if character_id == "SILENT" else 0.02
+    safe_smith_ratio = max(0.58, min(0.82, safe_smith_ratio))
     best = (-999.0, 0, None, {})
     scored = []
     for i, opt in enumerate(opts):
@@ -5790,8 +5850,12 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
                 score += 34
                 reasons.append("low-heal")
             elif ratio < safe_smith_ratio:
-                score += 28
-                reasons.append("mid-hp-heal")
+                if strong_upgrade and ratio >= 0.65:
+                    score += 10
+                    reasons.append("mid-hp-key-upgrade")
+                else:
+                    score += 28
+                    reasons.append("mid-hp-heal")
             elif ratio < 0.78 and not plan.combat_ready:
                 score += 12
                 reasons.append("deck-not-ready-heal")
@@ -5802,10 +5866,15 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
             score += 20 if ratio >= 0.55 else -6
             if plan.needs_scaling or plan.focused:
                 score += 6
-            target = choose_upgrade_target(state)
+            target = upgrade_target
             score += policy_number("rest.smith_bonus", 0.0)
             if target is not None:
                 score += policy_number("rest.smith_with_target_bonus", 0.0)
+                score += min(24.0, max(4.0, upgrade_value * 0.35))
+                if strong_upgrade:
+                    reasons.append(f"key-upgrade:{upgrade_card_id}")
+                elif solid_upgrade:
+                    reasons.append(f"solid-upgrade:{upgrade_card_id}")
             else:
                 score -= 8
                 reasons.append("no-upgrade-target")
@@ -5816,11 +5885,18 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
                 penalty = 34 + (14 if not plan.combat_ready else 0)
                 if plan.needs_block or plan.needs_draw:
                     penalty += 10
-                score -= penalty
+                if solid_upgrade and ratio >= 0.62:
+                    penalty -= 22 if character_id == "SILENT" and strong_upgrade else 12
+                    reasons.append("upgrade-risk-credit")
+                score -= max(12, penalty)
                 reasons.append("unsafe-mid-hp-smith")
             elif ratio < safe_smith_ratio + 0.06 and not plan.combat_ready:
-                score -= 12
-                reasons.append("borderline-smith")
+                if solid_upgrade and ratio >= 0.68:
+                    score -= 4
+                    reasons.append("borderline-key-smith")
+                else:
+                    score -= 12
+                    reasons.append("borderline-smith")
         if any((k in blob for k in ('dig', 'relic', '遗物'))):
             score += 14 if ratio >= 0.65 else -2
         if "HATCH" in option_label or any((k in blob for k in ('hatch', '孵化'))):
@@ -5846,7 +5922,7 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
         if score > best[0]:
             best = (score, i if idx is None else int(idx), target, opt)
 
-    log(f'rest pick idx={best[1]} target={best[2]} score={best[0]:.1f} hp_ratio={ratio:.2f} plan={plan.summary()} relic={relic_summary(state)} options={[(round(score, 1), idx, target, opt.get("option_id") or opt.get("title"), reasons) for score, idx, target, opt, reasons in scored]}')
+    log(f'rest pick idx={best[1]} target={best[2]} upgrade={upgrade_card_id}:{upgrade_value:.1f} score={best[0]:.1f} hp_ratio={ratio:.2f} plan={plan.summary()} relic={relic_summary(state)} options={[(round(score, 1), idx, target, opt.get("option_id") or opt.get("title"), reasons) for score, idx, target, opt, reasons in scored]}')
     journal_decision("rest_option", state, {'idx':int(best[1]), 
      'target':best[2], 
      'score':round(best[0], 1), 

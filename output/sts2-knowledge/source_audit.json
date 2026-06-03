@@ -1,0 +1,62 @@
+﻿{
+    "generated_at":  "2026-05-31T20:23:47.0901494+08:00",
+    "live_base":  "http://127.0.0.1:8080",
+    "external_base":  "https://spire-codex.com/api",
+    "live_health":  {
+                        "service":  "sts2-ai-agent",
+                        "mod_version":  "0.7.2",
+                        "protocol_version":  "2026-03-11-v1",
+                        "game_version":  "v0.103.3",
+                        "status":  "ready"
+                    },
+    "collections":  {
+                        "potions":  {
+                                        "live_count":  64,
+                                        "spire_codex_count":  63,
+                                        "spire_codex_available":  true
+                                    },
+                        "powers":  {
+                                       "live_count":  270,
+                                       "spire_codex_count":  259,
+                                       "spire_codex_available":  true
+                                   },
+                        "relics":  {
+                                       "live_count":  294,
+                                       "spire_codex_count":  293,
+                                       "spire_codex_available":  true
+                                   },
+                        "characters":  {
+                                           "live_count":  5,
+                                           "spire_codex_count":  5,
+                                           "spire_codex_available":  true
+                                       },
+                        "events":  {
+                                       "live_count":  57,
+                                       "spire_codex_count":  66,
+                                       "spire_codex_available":  true
+                                   },
+                        "cards":  {
+                                      "live_count":  577,
+                                      "spire_codex_count":  576,
+                                      "spire_codex_available":  true
+                                  },
+                        "monsters":  {
+                                         "live_count":  101,
+                                         "spire_codex_count":  115,
+                                         "spire_codex_available":  true
+                                     }
+                    },
+    "notes":  [
+                  "Use live API for current installed game identity/counts.",
+                  "Use Spire Codex API for English text where live game is localized.",
+                  "Exclude DEPRECATED_CARD from strategic drafting unless it appears in an existing deck as a cleanup/status artifact."
+              ],
+    "card_diff":  {
+                      "live_not_spire_codex":  [
+                                                   "DEPRECATED_CARD"
+                                               ],
+                      "spire_codex_not_live":  [
+
+                                               ]
+                  }
+}

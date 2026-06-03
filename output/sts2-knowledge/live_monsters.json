@@ -1,0 +1,2292 @@
+﻿[
+    {
+        "id":  "ASSASSIN_RUBY_RAIDER",
+        "name":  "劫掠者刺客",
+        "type":  "Normal",
+        "min_hp":  18,
+        "max_hp":  23,
+        "moves":  [
+                      {
+                          "id":  "KILLSHOT",
+                          "name":  "致命射击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "AXEBOT",
+        "name":  "巨斧机器人",
+        "type":  "Normal",
+        "min_hp":  40,
+        "max_hp":  44,
+        "moves":  [
+                      {
+                          "id":  "BOOT_UP",
+                          "name":  "启动"
+                      },
+                      {
+                          "id":  "HAMMER_UPPERCUT",
+                          "name":  "上勾锤击"
+                      },
+                      {
+                          "id":  "ONE_TWO",
+                          "name":  "两连击"
+                      },
+                      {
+                          "id":  "SHARPEN",
+                          "name":  "打磨"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "AXE_RUBY_RAIDER",
+        "name":  "劫掠者斧手",
+        "type":  "Normal",
+        "min_hp":  20,
+        "max_hp":  22,
+        "moves":  [
+                      {
+                          "id":  "BIG_SWING",
+                          "name":  "大力挥舞"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "BOWLBUG_EGG",
+        "name":  "盛碗虫（卵）",
+        "type":  "Normal",
+        "min_hp":  21,
+        "max_hp":  22,
+        "moves":  [
+                      {
+                          "id":  "BITE",
+                          "name":  "啃咬"
+                      },
+                      {
+                          "id":  "PROTECT",
+                          "name":  "保护"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "BOWLBUG_NECTAR",
+        "name":  "盛碗虫（蜜）",
+        "type":  "Normal",
+        "min_hp":  35,
+        "max_hp":  38,
+        "moves":  [
+                      {
+                          "id":  "BUFF",
+                          "name":  "强化"
+                      },
+                      {
+                          "id":  "THRASH",
+                          "name":  "撕扯"
+                      },
+                      {
+                          "id":  "THRASH2",
+                          "name":  "撕扯"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "BOWLBUG_ROCK",
+        "name":  "盛碗虫（石）",
+        "type":  "Normal",
+        "min_hp":  45,
+        "max_hp":  48,
+        "moves":  [
+                      {
+                          "id":  "HEADBUTT",
+                          "name":  "头槌"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "BOWLBUG_SILK",
+        "name":  "盛碗虫（丝）",
+        "type":  "Normal",
+        "min_hp":  40,
+        "max_hp":  43,
+        "moves":  [
+                      {
+                          "id":  "SPIN_WEB",
+                          "name":  "吐网"
+                      },
+                      {
+                          "id":  "THRASH",
+                          "name":  "撕扯"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "BRUTE_RUBY_RAIDER",
+        "name":  "劫掠者暴徒",
+        "type":  "Normal",
+        "min_hp":  30,
+        "max_hp":  33,
+        "moves":  [
+                      {
+                          "id":  "BEAT",
+                          "name":  "殴打"
+                      },
+                      {
+                          "id":  "CLAP",
+                          "name":  "拍击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "BYGONE_EFFIGY",
+        "name":  "旧日雕像",
+        "type":  "Elite",
+        "min_hp":  127,
+        "max_hp":  127,
+        "moves":  [
+                      {
+                          "id":  "SLASHES",
+                          "name":  "斩击"
+                      },
+                      {
+                          "id":  "SLEEP",
+                          "name":  "[red][sine]你的旅程，到此为止……[/sine][/red]"
+                      },
+                      {
+                          "id":  "SLEEP",
+                          "name":  "那么，我们开始吧？"
+                      },
+                      {
+                          "id":  "SLEEP",
+                          "name":  "沉睡"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "BYRDONIS",
+        "name":  "多尼斯异鸟",
+        "type":  "Elite",
+        "min_hp":  81,
+        "max_hp":  84,
+        "moves":  [
+                      {
+                          "id":  "BITE",
+                          "name":  "啃咬"
+                      },
+                      {
+                          "id":  "PECK",
+                          "name":  "啄击"
+                      },
+                      {
+                          "id":  "PROTECT",
+                          "name":  "保护"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "CALCIFIED_CULTIST",
+        "name":  "钙化邪教徒",
+        "type":  "Normal",
+        "min_hp":  38,
+        "max_hp":  41,
+        "moves":  [
+                      {
+                          "id":  "DARK_STRIKE",
+                          "name":  "黑暗打击"
+                      },
+                      {
+                          "id":  "INCANTATION",
+                          "name":  "[jitter]我们的力量无人能及！[/jitter]"
+                      },
+                      {
+                          "id":  "INCANTATION",
+                          "name":  "念咒"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "CEREMONIAL_BEAST",
+        "name":  "仪式兽",
+        "type":  "Boss",
+        "min_hp":  252,
+        "max_hp":  252,
+        "moves":  [
+                      {
+                          "id":  "BEAST_CRY",
+                          "name":  "野兽咆哮"
+                      },
+                      {
+                          "id":  "CRUSH",
+                          "name":  "碾碎"
+                      },
+                      {
+                          "id":  "PLOW",
+                          "name":  "横冲直撞"
+                      },
+                      {
+                          "id":  "STAMP",
+                          "name":  "跺地"
+                      },
+                      {
+                          "id":  "STOMP",
+                          "name":  "踩踏"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "CHOMPER",
+        "name":  "啃咬机",
+        "type":  "Normal",
+        "min_hp":  60,
+        "max_hp":  64,
+        "moves":  [
+                      {
+                          "id":  "CLAMP",
+                          "name":  "猛夹"
+                      },
+                      {
+                          "id":  "SCREECH",
+                          "name":  "尖锐鸣叫"
+                      },
+                      {
+                          "id":  "THRASH",
+                          "name":  "撕扯"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "CORPSE_SLUG",
+        "name":  "噬尸蛞蝓",
+        "type":  "Normal",
+        "min_hp":  25,
+        "max_hp":  27,
+        "moves":  [
+                      {
+                          "id":  "TACKLE",
+                          "name":  "冲撞"
+                      },
+                      {
+                          "id":  "WHIP_SLAP",
+                          "name":  "鞭打"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "CROSSBOW_RUBY_RAIDER",
+        "name":  "劫掠者弩手",
+        "type":  "Normal",
+        "min_hp":  18,
+        "max_hp":  21,
+        "moves":  [
+                      {
+                          "id":  "FIRE",
+                          "name":  "射击！"
+                      },
+                      {
+                          "id":  "RELOAD",
+                          "name":  "装填"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "CRUSHER",
+        "name":  "碾碎爪",
+        "type":  "Boss",
+        "min_hp":  209,
+        "max_hp":  209,
+        "moves":  [
+                      {
+                          "id":  "ADAPT",
+                          "name":  "适应"
+                      },
+                      {
+                          "id":  "BUG_STING",
+                          "name":  "虫蛰"
+                      },
+                      {
+                          "id":  "ENLARGING_STRIKE",
+                          "name":  "巨化打击"
+                      },
+                      {
+                          "id":  "GUARDED_STRIKE",
+                          "name":  "戒备打击"
+                      },
+                      {
+                          "id":  "THRASH",
+                          "name":  "撕扯"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "CUBEX_CONSTRUCT",
+        "name":  "立柱构造体",
+        "type":  "Normal",
+        "min_hp":  65,
+        "max_hp":  65,
+        "moves":  [
+                      {
+                          "id":  "CHARGE_UP",
+                          "name":  "蓄能"
+                      },
+                      {
+                          "id":  "REPEATER_BLAST",
+                          "name":  "重复轰击"
+                      },
+                      {
+                          "id":  "SUBMERGE",
+                          "name":  "下潜"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "DAMP_CULTIST",
+        "name":  "潮湿邪教徒",
+        "type":  "Normal",
+        "min_hp":  51,
+        "max_hp":  53,
+        "moves":  [
+                      {
+                          "id":  "DARK_STRIKE",
+                          "name":  "黑暗打击"
+                      },
+                      {
+                          "id":  "INCANTATION",
+                          "name":  "[jitter]咔！\n咔——[/jitter]"
+                      },
+                      {
+                          "id":  "INCANTATION",
+                          "name":  "念咒"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "DECIMILLIPEDE_SEGMENT_BACK",
+        "name":  "残杀千足虫",
+        "type":  "Elite",
+        "min_hp":  40,
+        "max_hp":  46,
+        "moves":  [
+
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "DECIMILLIPEDE_SEGMENT_FRONT",
+        "name":  "残杀千足虫",
+        "type":  "Elite",
+        "min_hp":  40,
+        "max_hp":  46,
+        "moves":  [
+
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "DECIMILLIPEDE_SEGMENT_MIDDLE",
+        "name":  "残杀千足虫",
+        "type":  "Elite",
+        "min_hp":  40,
+        "max_hp":  46,
+        "moves":  [
+
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "DEVOTED_SCULPTOR",
+        "name":  "虔诚雕刻师",
+        "type":  "Normal",
+        "min_hp":  162,
+        "max_hp":  162,
+        "moves":  [
+                      {
+                          "id":  "FORBIDDEN_INCANTATION",
+                          "name":  "禁忌咒文"
+                      },
+                      {
+                          "id":  "FORBIDDEN_INCANTATION",
+                          "name":  "[jitter]咔咔——！！[/jitter]"
+                      },
+                      {
+                          "id":  "SAVAGE",
+                          "name":  "狂击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "DOORMAKER",
+        "name":  "门扉",
+        "type":  "Boss",
+        "min_hp":  489,
+        "max_hp":  489,
+        "moves":  [
+                      {
+                          "id":  "DRAMATIC_OPEN",
+                          "name":  "戏剧性开启"
+                      },
+                      {
+                          "id":  "DRAMATIC_OPEN",
+                          "name":  "我饥饿……"
+                      },
+                      {
+                          "id":  "GRASP_MOVE",
+                          "name":  "紧握"
+                      },
+                      {
+                          "id":  "HUNGER_MOVE",
+                          "name":  "饥饿"
+                      },
+                      {
+                          "id":  "SCRUTINY_MOVE",
+                          "name":  "细看"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "ENTOMANCER",
+        "name":  "蜂群术士",
+        "type":  "Elite",
+        "min_hp":  145,
+        "max_hp":  145,
+        "moves":  [
+                      {
+                          "id":  "AGITATE_SWARM",
+                          "name":  "煽动蜂群"
+                      },
+                      {
+                          "id":  "BEES",
+                          "name":  "蜜——蜂——！"
+                      },
+                      {
+                          "id":  "PHEROMONE_SPIT",
+                          "name":  "喷射信息素"
+                      },
+                      {
+                          "id":  "SPEAR",
+                          "name":  "矛击！"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "EXOSKELETON",
+        "name":  "外骨骼虫",
+        "type":  "Normal",
+        "min_hp":  24,
+        "max_hp":  28,
+        "moves":  [
+                      {
+                          "id":  "ENRAGE",
+                          "name":  "激怒"
+                      },
+                      {
+                          "id":  "MANDIBLES",
+                          "name":  "啃食"
+                      },
+                      {
+                          "id":  "SKITTER",
+                          "name":  "忙乱"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "EYE_WITH_TEETH",
+        "name":  "利齿之眼",
+        "type":  "Normal",
+        "min_hp":  6,
+        "max_hp":  6,
+        "moves":  [
+                      {
+                          "id":  "DISTRACT",
+                          "name":  "牵制"
+                      },
+                      {
+                          "id":  "STARTLE",
+                          "name":  "惊觉"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FABRICATOR",
+        "name":  "组装师",
+        "type":  "Normal",
+        "min_hp":  150,
+        "max_hp":  150,
+        "moves":  [
+                      {
+                          "id":  "DISINTEGRATE",
+                          "name":  "瓦解"
+                      },
+                      {
+                          "id":  "FABRICATE",
+                          "name":  "组装"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FAT_GREMLIN",
+        "name":  "胖地精",
+        "type":  "Normal",
+        "min_hp":  13,
+        "max_hp":  17,
+        "moves":  [
+                      {
+                          "id":  "FLEE",
+                          "name":  "[jitter][orange]我溜啦！[/orange][/jitter]"
+                      },
+                      {
+                          "id":  "FLEE",
+                          "name":  "逃跑"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FLAIL_KNIGHT",
+        "name":  "连枷骑士",
+        "type":  "Elite",
+        "min_hp":  101,
+        "max_hp":  101,
+        "moves":  [
+                      {
+                          "id":  "BREAKER",
+                          "name":  "砸碎"
+                      },
+                      {
+                          "id":  "FLAIL",
+                          "name":  "连枷"
+                      },
+                      {
+                          "id":  "RAM",
+                          "name":  "撞击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FLYCONID",
+        "name":  "飞蝇菌子",
+        "type":  "Normal",
+        "min_hp":  47,
+        "max_hp":  49,
+        "moves":  [
+                      {
+                          "id":  "FRAIL_SPORES",
+                          "name":  "脆弱孢子"
+                      },
+                      {
+                          "id":  "SMASH",
+                          "name":  "猛砸"
+                      },
+                      {
+                          "id":  "TACKLE",
+                          "name":  "虚弱孢子"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FOGMOG",
+        "name":  "雾菇",
+        "type":  "Normal",
+        "min_hp":  74,
+        "max_hp":  74,
+        "moves":  [
+                      {
+                          "id":  "ILLUSORY_SPORES",
+                          "name":  "幻象孢子"
+                      },
+                      {
+                          "id":  "THWACK",
+                          "name":  "重击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FOSSIL_STALKER",
+        "name":  "化石追踪者",
+        "type":  "Normal",
+        "min_hp":  51,
+        "max_hp":  53,
+        "moves":  [
+                      {
+                          "id":  "LASH",
+                          "name":  "甩动"
+                      },
+                      {
+                          "id":  "LATCH",
+                          "name":  "缠上"
+                      },
+                      {
+                          "id":  "TACKLE",
+                          "name":  "冲撞"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FROG_KNIGHT",
+        "name":  "青蛙骑士",
+        "type":  "Normal",
+        "min_hp":  191,
+        "max_hp":  191,
+        "moves":  [
+                      {
+                          "id":  "BEETLE_CHARGE",
+                          "name":  "甲虫冲锋"
+                      },
+                      {
+                          "id":  "FOR_THE_QUEEN",
+                          "name":  "为了女王"
+                      },
+                      {
+                          "id":  "STRIKE_DOWN_EVIL",
+                          "name":  "惩恶一击"
+                      },
+                      {
+                          "id":  "TONGUE_LASH",
+                          "name":  "吐舌"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "FUZZY_WURM_CRAWLER",
+        "name":  "毛绒伏地虫",
+        "type":  "Normal",
+        "min_hp":  55,
+        "max_hp":  57,
+        "moves":  [
+                      {
+                          "id":  "ACID_GOOP",
+                          "name":  "酸液黏球"
+                      },
+                      {
+                          "id":  "TACKLE",
+                          "name":  "吸气"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "GAS_BOMB",
+        "name":  "气态炸弹",
+        "type":  "Normal",
+        "min_hp":  7,
+        "max_hp":  7,
+        "moves":  [
+                      {
+                          "id":  "EXPLODE",
+                          "name":  "爆炸"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "GLOBE_HEAD",
+        "name":  "电球头",
+        "type":  "Normal",
+        "min_hp":  148,
+        "max_hp":  148,
+        "moves":  [
+                      {
+                          "id":  "CHANNEL_LIGHTNING",
+                          "name":  "生成闪电"
+                      },
+                      {
+                          "id":  "DUAL_CAST",
+                          "name":  "双重释放"
+                      },
+                      {
+                          "id":  "SHOCKING_SLAP",
+                          "name":  "电击掌"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "GREMLIN_MERC",
+        "name":  "地精佣兵",
+        "type":  "Normal",
+        "min_hp":  47,
+        "max_hp":  49,
+        "moves":  [
+                      {
+                          "id":  "DOUBLE_SMASH",
+                          "name":  "双重猛击"
+                      },
+                      {
+                          "id":  "GIMME",
+                          "name":  "[jitter][gold]钱钱！[/gold][/jitter]\n[sine][orange]钱钱！[/orange][/sine]"
+                      },
+                      {
+                          "id":  "GIMME",
+                          "name":  "拿来"
+                      },
+                      {
+                          "id":  "HEHE",
+                          "name":  "嘿嘿"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "GUARDBOT",
+        "name":  "守护机器人",
+        "type":  "Normal",
+        "min_hp":  16,
+        "max_hp":  20,
+        "moves":  [
+                      {
+                          "id":  "GUARD",
+                          "name":  "守护"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "HAUNTED_SHIP",
+        "name":  "幽灵船",
+        "type":  "Normal",
+        "min_hp":  63,
+        "max_hp":  63,
+        "moves":  [
+                      {
+                          "id":  "HAUNT",
+                          "name":  "纠缠"
+                      },
+                      {
+                          "id":  "RAMMING_SPEED",
+                          "name":  "撞击速度"
+                      },
+                      {
+                          "id":  "STOMP",
+                          "name":  "践踏"
+                      },
+                      {
+                          "id":  "SWIPE",
+                          "name":  "扫击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "HUNTER_KILLER",
+        "name":  "猎人杀手",
+        "type":  "Normal",
+        "min_hp":  121,
+        "max_hp":  121,
+        "moves":  [
+                      {
+                          "id":  "BITE",
+                          "name":  "啃咬"
+                      },
+                      {
+                          "id":  "PUNCTURE",
+                          "name":  "刺穿"
+                      },
+                      {
+                          "id":  "TENDERIZING_GOOP",
+                          "name":  "嫩化黏液"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "INFESTED_PRISM",
+        "name":  "感染棱柱",
+        "type":  "Elite",
+        "min_hp":  200,
+        "max_hp":  200,
+        "moves":  [
+                      {
+                          "id":  "JAB",
+                          "name":  "刺击"
+                      },
+                      {
+                          "id":  "PULSATE",
+                          "name":  "脉动"
+                      },
+                      {
+                          "id":  "RADIATE",
+                          "name":  "辐射"
+                      },
+                      {
+                          "id":  "WHIRLWIND",
+                          "name":  "旋风"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "INKLET",
+        "name":  "墨宝",
+        "type":  "Normal",
+        "min_hp":  11,
+        "max_hp":  17,
+        "moves":  [
+                      {
+                          "id":  "JAB",
+                          "name":  "刺击"
+                      },
+                      {
+                          "id":  "PIERCING_GAZE",
+                          "name":  "锐利凝视"
+                      },
+                      {
+                          "id":  "WINDUP_PUNCH",
+                          "name":  "蓄力拳"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "KIN_FOLLOWER",
+        "name":  "同族信徒",
+        "type":  "Boss",
+        "min_hp":  58,
+        "max_hp":  59,
+        "moves":  [
+                      {
+                          "id":  "BOOMERANG_MOVE",
+                          "name":  "回旋镖"
+                      },
+                      {
+                          "id":  "POWER_DANCE_MOVE",
+                          "name":  "力量之舞"
+                      },
+                      {
+                          "id":  "QUICK_SLASH_MOVE",
+                          "name":  "快速斩击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "KIN_PRIEST",
+        "name":  "同族神官",
+        "type":  "Boss",
+        "min_hp":  190,
+        "max_hp":  190,
+        "moves":  [
+                      {
+                          "id":  "BEAM_MOVE",
+                          "name":  "灵魂光束"
+                      },
+                      {
+                          "id":  "OR_OF_FRAILTY_MOVE",
+                          "name":  "脆弱球"
+                      },
+                      {
+                          "id":  "OR_OF_WEAKNESS_MOVE",
+                          "name":  "虚弱球"
+                      },
+                      {
+                          "id":  "RITUAL",
+                          "name":  "[jitter]呱——咔！！[/jitter]"
+                      },
+                      {
+                          "id":  "RITUAL_MOVE",
+                          "name":  "黑暗仪式"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "KNOWLEDGE_DEMON",
+        "name":  "知识恶魔",
+        "type":  "Boss",
+        "min_hp":  379,
+        "max_hp":  379,
+        "moves":  [
+                      {
+                          "id":  "BLUE_FLAME",
+                          "name":  "蓝色火焰"
+                      },
+                      {
+                          "id":  "CURSE_OF_KNOWLEDGE",
+                          "name":  "此事已成。"
+                      },
+                      {
+                          "id":  "CURSE_OF_KNOWLEDGE",
+                          "name":  "做出选择。"
+                      },
+                      {
+                          "id":  "CURSE_OF_KNOWLEDGE",
+                          "name":  "知识的诅咒"
+                      },
+                      {
+                          "id":  "HAVE_A_TASTE",
+                          "name":  "不妨一品"
+                      },
+                      {
+                          "id":  "KNOWLEDGE_OVERWHELMING",
+                          "name":  "知识过载"
+                      },
+                      {
+                          "id":  "PONDER",
+                          "name":  "思考"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "LAGAVULIN_MATRIARCH",
+        "name":  "乐加维林族母",
+        "type":  "Boss",
+        "min_hp":  222,
+        "max_hp":  222,
+        "moves":  [
+                      {
+                          "id":  "DISEMBOWEL",
+                          "name":  "开膛破肚"
+                      },
+                      {
+                          "id":  "SLASH",
+                          "name":  "斩击"
+                      },
+                      {
+                          "id":  "SLEEP",
+                          "name":  "沉睡"
+                      },
+                      {
+                          "id":  "SOUL_SIPHON",
+                          "name":  "灵魂汲取"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "LEAF_SLIME_M",
+        "name":  "树叶史莱姆（中）",
+        "type":  "Normal",
+        "min_hp":  32,
+        "max_hp":  35,
+        "moves":  [
+                      {
+                          "id":  "CLUMP_SHOT",
+                          "name":  "团块射击"
+                      },
+                      {
+                          "id":  "STICKY_SHOT",
+                          "name":  "黏糊射击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "LEAF_SLIME_S",
+        "name":  "树叶史莱姆（小）",
+        "type":  "Normal",
+        "min_hp":  11,
+        "max_hp":  15,
+        "moves":  [
+                      {
+                          "id":  "GOOP",
+                          "name":  "黏液"
+                      },
+                      {
+                          "id":  "TACKLE",
+                          "name":  "冲撞"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "LIVING_FOG",
+        "name":  "活雾",
+        "type":  "Normal",
+        "min_hp":  80,
+        "max_hp":  80,
+        "moves":  [
+                      {
+                          "id":  "BLOAT",
+                          "name":  "膨胀"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "LIVING_SHIELD",
+        "name":  "活体盾",
+        "type":  "Normal",
+        "min_hp":  55,
+        "max_hp":  55,
+        "moves":  [
+                      {
+                          "id":  "SHIELD_SLAM",
+                          "name":  "盾击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "LOUSE_PROGENITOR",
+        "name":  "虱虫之祖",
+        "type":  "Normal",
+        "min_hp":  134,
+        "max_hp":  136,
+        "moves":  [
+                      {
+                          "id":  "ACID_DUST",
+                          "name":  "酸性尘"
+                      },
+                      {
+                          "id":  "CURL_AND_GROW",
+                          "name":  "蜷身成长"
+                      },
+                      {
+                          "id":  "WEB_CANNON",
+                          "name":  "吐网炮"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "MAGI_KNIGHT",
+        "name":  "魔法骑士",
+        "type":  "Elite",
+        "min_hp":  82,
+        "max_hp":  82,
+        "moves":  [
+                      {
+                          "id":  "MAGIC_BOMB",
+                          "name":  "魔法炸弹"
+                      },
+                      {
+                          "id":  "POWER_SHIELD",
+                          "name":  "强力护盾"
+                      },
+                      {
+                          "id":  "RAM",
+                          "name":  "撞击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "MAWLER",
+        "name":  "蛮兽",
+        "type":  "Normal",
+        "min_hp":  72,
+        "max_hp":  72,
+        "moves":  [
+                      {
+                          "id":  "CLAW",
+                          "name":  "爪击"
+                      },
+                      {
+                          "id":  "RIP_AND_TEAR",
+                          "name":  "狂乱撕扯"
+                      },
+                      {
+                          "id":  "ROAR",
+                          "name":  "怒吼"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "MECHA_KNIGHT",
+        "name":  "机甲骑士",
+        "type":  "Elite",
+        "min_hp":  300,
+        "max_hp":  300,
+        "moves":  [
+                      {
+                          "id":  "CHARGE",
+                          "name":  "冲锋"
+                      },
+                      {
+                          "id":  "FLAMETHROWER",
+                          "name":  "喷火器"
+                      },
+                      {
+                          "id":  "HEAVY_CLEAVE",
+                          "name":  "重斩"
+                      },
+                      {
+                          "id":  "WINDUP",
+                          "name":  "举起蓄力"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "MYTE",
+        "name":  "异螨",
+        "type":  "Normal",
+        "min_hp":  61,
+        "max_hp":  67,
+        "moves":  [
+                      {
+                          "id":  "BIG_SUCK",
+                          "name":  "大吸一口"
+                      },
+                      {
+                          "id":  "BITE",
+                          "name":  "啃咬"
+                      },
+                      {
+                          "id":  "SUCK",
+                          "name":  "吸吮"
+                      },
+                      {
+                          "id":  "TOXIC",
+                          "name":  "浓毒"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "NIBBIT",
+        "name":  "小啃兽",
+        "type":  "Normal",
+        "min_hp":  42,
+        "max_hp":  46,
+        "moves":  [
+                      {
+                          "id":  "BUTT",
+                          "name":  "顶撞"
+                      },
+                      {
+                          "id":  "HESITANT_SLICE",
+                          "name":  "犹豫斩击"
+                      },
+                      {
+                          "id":  "HISS",
+                          "name":  "哈气"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "NOISEBOT",
+        "name":  "噪音机器人",
+        "type":  "Normal",
+        "min_hp":  18,
+        "max_hp":  23,
+        "moves":  [
+                      {
+                          "id":  "NOISE",
+                          "name":  "噪音"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "OVICOPTER",
+        "name":  "直飞产卵虫",
+        "type":  "Normal",
+        "min_hp":  124,
+        "max_hp":  130,
+        "moves":  [
+                      {
+                          "id":  "LAY_EGGS",
+                          "name":  "产卵"
+                      },
+                      {
+                          "id":  "NUTRITIONAL_PASTE",
+                          "name":  "高营养糊糊"
+                      },
+                      {
+                          "id":  "SMASH",
+                          "name":  "猛砸"
+                      },
+                      {
+                          "id":  "TENDERIZER",
+                          "name":  "嫩化"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "OWL_MAGISTRATE",
+        "name":  "猫头鹰法官",
+        "type":  "Normal",
+        "min_hp":  234,
+        "max_hp":  234,
+        "moves":  [
+                      {
+                          "id":  "JUDICIAL_FLIGHT",
+                          "name":  "飞法行为"
+                      },
+                      {
+                          "id":  "MAGISTRATE_SCRUTINY",
+                          "name":  "法官审查"
+                      },
+                      {
+                          "id":  "PECK_ASSAULT",
+                          "name":  "猛啄袭击"
+                      },
+                      {
+                          "id":  "VERDICT",
+                          "name":  "裁决"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "PHANTASMAL_GARDENER",
+        "name":  "花园幽灵鳗",
+        "type":  "Elite",
+        "min_hp":  26,
+        "max_hp":  31,
+        "moves":  [
+                      {
+                          "id":  "BITE",
+                          "name":  "啃咬"
+                      },
+                      {
+                          "id":  "ENLARGE",
+                          "name":  "变大"
+                      },
+                      {
+                          "id":  "FLAIL",
+                          "name":  "猛晃"
+                      },
+                      {
+                          "id":  "LASH",
+                          "name":  "甩动"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "PHROG_PARASITE",
+        "name":  "异蛙寄生虫",
+        "type":  "Elite",
+        "min_hp":  61,
+        "max_hp":  64,
+        "moves":  [
+                      {
+                          "id":  "INFECT",
+                          "name":  "感染"
+                      },
+                      {
+                          "id":  "LASH",
+                          "name":  "甩动"
+                      },
+                      {
+                          "id":  "LEAP_SLAM",
+                          "name":  "跳跃猛砸"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "PUNCH_CONSTRUCT",
+        "name":  "拳击构装体",
+        "type":  "Normal",
+        "min_hp":  55,
+        "max_hp":  55,
+        "moves":  [
+                      {
+                          "id":  "FAST_PUNCH",
+                          "name":  "快速拳"
+                      },
+                      {
+                          "id":  "READY",
+                          "name":  "准备就绪"
+                      },
+                      {
+                          "id":  "STRONG_PUNCH",
+                          "name":  "强力拳"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "QUEEN",
+        "name":  "女王",
+        "type":  "Boss",
+        "min_hp":  400,
+        "max_hp":  400,
+        "moves":  [
+                      {
+                          "id":  "BARRIER",
+                          "name":  "屏障"
+                      },
+                      {
+                          "id":  "BURN_BRIGHT_FOR_ME",
+                          "name":  "为我尽力燃烧吧"
+                      },
+                      {
+                          "id":  "EXECUTION",
+                          "name":  "处决"
+                      },
+                      {
+                          "id":  "IMPOSSIBLE",
+                          "name":  "绝无可能"
+                      },
+                      {
+                          "id":  "OFF_WITH_YOUR_HEAD",
+                          "name":  "将头砍下"
+                      },
+                      {
+                          "id":  "SUMMON_1",
+                          "name":  "召唤"
+                      },
+                      {
+                          "id":  "SUMMON_2",
+                          "name":  "召唤"
+                      },
+                      {
+                          "id":  "YOURE_MINE",
+                          "name":  "你是我的了"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "ROCKET",
+        "name":  "火箭",
+        "type":  "Boss",
+        "min_hp":  199,
+        "max_hp":  199,
+        "moves":  [
+                      {
+                          "id":  "CHARGE_UP",
+                          "name":  "蓄能"
+                      },
+                      {
+                          "id":  "LASER",
+                          "name":  "激光"
+                      },
+                      {
+                          "id":  "PRECISION_BEAM",
+                          "name":  "精准光束"
+                      },
+                      {
+                          "id":  "RECHARGE",
+                          "name":  "重新充能"
+                      },
+                      {
+                          "id":  "TARGETING_RETICLE",
+                          "name":  "瞄准十字"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SCROLL_OF_BITING",
+        "name":  "咬人卷轴",
+        "type":  "Normal",
+        "min_hp":  31,
+        "max_hp":  38,
+        "moves":  [
+                      {
+                          "id":  "CHEW",
+                          "name":  "咀嚼"
+                      },
+                      {
+                          "id":  "CHOMP",
+                          "name":  "大啃"
+                      },
+                      {
+                          "id":  "MORE_TEETH",
+                          "name":  "更多牙齿"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SEAPUNK",
+        "name":  "海洋混混",
+        "type":  "Normal",
+        "min_hp":  44,
+        "max_hp":  46,
+        "moves":  [
+                      {
+                          "id":  "BUBBLE_BURP",
+                          "name":  "吐泡泡"
+                      },
+                      {
+                          "id":  "SEA_KICK",
+                          "name":  "海洋踢"
+                      },
+                      {
+                          "id":  "SPINNING_KICK",
+                          "name":  "回旋踢"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SEWER_CLAM",
+        "name":  "下水道蚌",
+        "type":  "Normal",
+        "min_hp":  56,
+        "max_hp":  56,
+        "moves":  [
+                      {
+                          "id":  "JET",
+                          "name":  "喷射"
+                      },
+                      {
+                          "id":  "PRESSURIZE",
+                          "name":  "增压"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SHRINKER_BEETLE",
+        "name":  "缩小甲虫",
+        "type":  "Normal",
+        "min_hp":  38,
+        "max_hp":  40,
+        "moves":  [
+                      {
+                          "id":  "CHOMP",
+                          "name":  "大啃"
+                      },
+                      {
+                          "id":  "SHRINKER",
+                          "name":  "缩小"
+                      },
+                      {
+                          "id":  "STOMP",
+                          "name":  "践踏"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SKULKING_COLONY",
+        "name":  "鬼祟珊瑚群",
+        "type":  "Elite",
+        "min_hp":  70,
+        "max_hp":  70,
+        "moves":  [
+                      {
+                          "id":  "INERTIA",
+                          "name":  "惯性"
+                      },
+                      {
+                          "id":  "PIERCING_STABS",
+                          "name":  "穿刺戳击"
+                      },
+                      {
+                          "id":  "ZOOM",
+                          "name":  "猛冲"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SLIMED_BERSERKER",
+        "name":  "史莱姆狂战士",
+        "type":  "Normal",
+        "min_hp":  266,
+        "max_hp":  266,
+        "moves":  [
+                      {
+                          "id":  "FURIOUS_PUMMELING",
+                          "name":  "愤怒拍打"
+                      },
+                      {
+                          "id":  "SLIME_WHIRLWIND",
+                          "name":  "黏液旋风"
+                      },
+                      {
+                          "id":  "VOMIT_ICHOR",
+                          "name":  "呕吐脓液"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SLITHERING_STRANGLER",
+        "name":  "蛇行扼杀者",
+        "type":  "Normal",
+        "min_hp":  53,
+        "max_hp":  55,
+        "moves":  [
+                      {
+                          "id":  "CONSTRICT",
+                          "name":  "缠身"
+                      },
+                      {
+                          "id":  "LASH",
+                          "name":  "甩动"
+                      },
+                      {
+                          "id":  "THWACK",
+                          "name":  "重击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SLUDGE_SPINNER",
+        "name":  "淤泥旋螺",
+        "type":  "Normal",
+        "min_hp":  37,
+        "max_hp":  39,
+        "moves":  [
+                      {
+                          "id":  "OIL_SPRAY",
+                          "name":  "喷油"
+                      },
+                      {
+                          "id":  "RAGE",
+                          "name":  "狂怒"
+                      },
+                      {
+                          "id":  "SLAM",
+                          "name":  "砸击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SLUMBERING_BEETLE",
+        "name":  "熟睡甲虫",
+        "type":  "Normal",
+        "min_hp":  86,
+        "max_hp":  86,
+        "moves":  [
+                      {
+                          "id":  "CRASH",
+                          "name":  "冲击"
+                      },
+                      {
+                          "id":  "RESOLVE",
+                          "name":  "坚毅"
+                      },
+                      {
+                          "id":  "ROLL_OUT",
+                          "name":  "出击"
+                      },
+                      {
+                          "id":  "SNORE",
+                          "name":  "打鼾"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SNAPPING_JAXFRUIT",
+        "name":  "闪光贾克斯果",
+        "type":  "Normal",
+        "min_hp":  31,
+        "max_hp":  33,
+        "moves":  [
+                      {
+                          "id":  "COLLECT_POWER",
+                          "name":  "积蓄力量"
+                      },
+                      {
+                          "id":  "ENERGY_ORB",
+                          "name":  "能量球"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SNEAKY_GREMLIN",
+        "name":  "卑鄙地精",
+        "type":  "Normal",
+        "min_hp":  10,
+        "max_hp":  14,
+        "moves":  [
+                      {
+                          "id":  "TACKLE",
+                          "name":  "冲撞"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SOUL_FYSH",
+        "name":  "灵魂异鱼",
+        "type":  "Boss",
+        "min_hp":  211,
+        "max_hp":  211,
+        "moves":  [
+                      {
+                          "id":  "BURP",
+                          "name":  "打嗝"
+                      },
+                      {
+                          "id":  "DE_GAS",
+                          "name":  "排气"
+                      },
+                      {
+                          "id":  "SCREAM",
+                          "name":  "尖叫"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SOUL_NEXUS",
+        "name":  "灵魂枢纽",
+        "type":  "Elite",
+        "min_hp":  234,
+        "max_hp":  234,
+        "moves":  [
+                      {
+                          "id":  "DRAIN_LIFE",
+                          "name":  "汲取生命"
+                      },
+                      {
+                          "id":  "MAELSTROM",
+                          "name":  "大漩涡"
+                      },
+                      {
+                          "id":  "SOUL_BURN",
+                          "name":  "灵魂灼烧"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SPECTRAL_KNIGHT",
+        "name":  "幽灵骑士",
+        "type":  "Elite",
+        "min_hp":  93,
+        "max_hp":  93,
+        "moves":  [
+                      {
+                          "id":  "HEX",
+                          "name":  "恶咒"
+                      },
+                      {
+                          "id":  "SOUL_FLAME",
+                          "name":  "灵魂火焰"
+                      },
+                      {
+                          "id":  "SOUL_SLASH",
+                          "name":  "灵魂斩击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "SPINY_TOAD",
+        "name":  "棘刺蟾蜍",
+        "type":  "Normal",
+        "min_hp":  116,
+        "max_hp":  119,
+        "moves":  [
+                      {
+                          "id":  "PROTRUDING_SPIKES",
+                          "name":  "伸出尖刺"
+                      },
+                      {
+                          "id":  "SPIKE_EXPLOSION",
+                          "name":  "尖刺爆破"
+                      },
+                      {
+                          "id":  "TONGUE_LASH",
+                          "name":  "吐舌"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "STABBOT",
+        "name":  "戳刺机器人",
+        "type":  "Normal",
+        "min_hp":  18,
+        "max_hp":  23,
+        "moves":  [
+                      {
+                          "id":  "STAB",
+                          "name":  "戳刺"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TERROR_EEL",
+        "name":  "骇鳗",
+        "type":  "Elite",
+        "min_hp":  140,
+        "max_hp":  140,
+        "moves":  [
+                      {
+                          "id":  "Crash",
+                          "name":  "冲击"
+                      },
+                      {
+                          "id":  "Thrash",
+                          "name":  "撕扯"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TEST_SUBJECT",
+        "name":  "实验体 #C8",
+        "type":  "Boss",
+        "min_hp":  100,
+        "max_hp":  100,
+        "moves":  [
+                      {
+                          "id":  "BIG_POUNCE_MOVE",
+                          "name":  "猛扑"
+                      },
+                      {
+                          "id":  "BITE_MOVE",
+                          "name":  "啃咬"
+                      },
+                      {
+                          "id":  "BURNING_GROWL_MOVE",
+                          "name":  "燃烧咆哮"
+                      },
+                      {
+                          "id":  "MULTI_CLAW_MOVE",
+                          "name":  "多爪攻击"
+                      },
+                      {
+                          "id":  "PHASE3_LACERATE_MOVE",
+                          "name":  "裂伤"
+                      },
+                      {
+                          "id":  "POUNCE_MOVE",
+                          "name":  "扑击"
+                      },
+                      {
+                          "id":  "RESPAWN_MOVE",
+                          "name":  "重生"
+                      },
+                      {
+                          "id":  "SKULL_BASH_MOVE",
+                          "name":  "颅骨重击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "THE_FORGOTTEN",
+        "name":  "遗忘之物",
+        "type":  "Normal",
+        "min_hp":  106,
+        "max_hp":  106,
+        "moves":  [
+                      {
+                          "id":  "DREAD",
+                          "name":  "恐惧"
+                      },
+                      {
+                          "id":  "MIASMA",
+                          "name":  "瘴气"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "THE_INSATIABLE",
+        "name":  "无厌沙虫",
+        "type":  "Boss",
+        "min_hp":  321,
+        "max_hp":  321,
+        "moves":  [
+                      {
+                          "id":  "LIQUIFY_GROUND",
+                          "name":  "液化地面"
+                      },
+                      {
+                          "id":  "LUNGING_BITE",
+                          "name":  "前扑啃咬"
+                      },
+                      {
+                          "id":  "SALIVATE",
+                          "name":  "分泌唾液"
+                      },
+                      {
+                          "id":  "THRASH",
+                          "name":  "撕扯"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "THE_LOST",
+        "name":  "失落之物",
+        "type":  "Normal",
+        "min_hp":  93,
+        "max_hp":  93,
+        "moves":  [
+                      {
+                          "id":  "DEBILITATING_SMOG",
+                          "name":  "致残雾霾"
+                      },
+                      {
+                          "id":  "EYE_LASERS",
+                          "name":  "眼部激光"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "THE_OBSCURA",
+        "name":  "胧光怪",
+        "type":  "Normal",
+        "min_hp":  123,
+        "max_hp":  123,
+        "moves":  [
+                      {
+                          "id":  "HARDENING_STRIKE",
+                          "name":  "硬化攻击"
+                      },
+                      {
+                          "id":  "ILLUSION",
+                          "name":  "幻象"
+                      },
+                      {
+                          "id":  "PIERCING_GAZE",
+                          "name":  "锐利凝视"
+                      },
+                      {
+                          "id":  "WAIL",
+                          "name":  "哭号"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "THIEVING_HOPPER",
+        "name":  "偷窃草蜢",
+        "type":  "Normal",
+        "min_hp":  79,
+        "max_hp":  79,
+        "moves":  [
+                      {
+                          "id":  "ESCAPE",
+                          "name":  "逃跑"
+                      },
+                      {
+                          "id":  "FLUTTER",
+                          "name":  "振翅"
+                      },
+                      {
+                          "id":  "HAT_TRICK",
+                          "name":  "帽子戏法"
+                      },
+                      {
+                          "id":  "NAB",
+                          "name":  "抢夺"
+                      },
+                      {
+                          "id":  "THIEVERY",
+                          "name":  "偷盗"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TOADPOLE",
+        "name":  "蟾蜍蝌蚪",
+        "type":  "Normal",
+        "min_hp":  21,
+        "max_hp":  25,
+        "moves":  [
+                      {
+                          "id":  "SPIKEN",
+                          "name":  "带刺"
+                      },
+                      {
+                          "id":  "SPIKE_SPIT",
+                          "name":  "吐刺"
+                      },
+                      {
+                          "id":  "WHIRL",
+                          "name":  "旋转"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TORCH_HEAD_AMALGAM",
+        "name":  "火炬头聚合体",
+        "type":  "Boss",
+        "min_hp":  199,
+        "max_hp":  199,
+        "moves":  [
+                      {
+                          "id":  "TACKLE",
+                          "name":  "冲撞"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TOUGH_EGG",
+        "name":  "结实的卵",
+        "type":  "Normal",
+        "min_hp":  14,
+        "max_hp":  18,
+        "moves":  [
+                      {
+                          "id":  "HATCH",
+                          "name":  "孵化"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TRACKER_RUBY_RAIDER",
+        "name":  "劫掠者追踪手",
+        "type":  "Normal",
+        "min_hp":  21,
+        "max_hp":  25,
+        "moves":  [
+                      {
+                          "id":  "HOUNDS",
+                          "name":  "放狗"
+                      },
+                      {
+                          "id":  "TRACK",
+                          "name":  "追踪"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TUNNELER",
+        "name":  "地道虫",
+        "type":  "Normal",
+        "min_hp":  87,
+        "max_hp":  87,
+        "moves":  [
+                      {
+                          "id":  "BELOW",
+                          "name":  "下方攻击"
+                      },
+                      {
+                          "id":  "BITE",
+                          "name":  "啃咬"
+                      },
+                      {
+                          "id":  "BURROW",
+                          "name":  "钻洞"
+                      },
+                      {
+                          "id":  "STRIKE",
+                          "name":  "冒头打击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TURRET_OPERATOR",
+        "name":  "高塔炮手",
+        "type":  "Normal",
+        "min_hp":  41,
+        "max_hp":  41,
+        "moves":  [
+                      {
+                          "id":  "LOADING",
+                          "name":  "上弹"
+                      },
+                      {
+                          "id":  "UNLOAD",
+                          "name":  "弹雨！"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TWIG_SLIME_M",
+        "name":  "树枝史莱姆（中）",
+        "type":  "Normal",
+        "min_hp":  26,
+        "max_hp":  28,
+        "moves":  [
+                      {
+                          "id":  "CHOMP",
+                          "name":  "大啃"
+                      },
+                      {
+                          "id":  "POKEY_POUNCE",
+                          "name":  "戳刺扑击"
+                      },
+                      {
+                          "id":  "STICKY_SHOT",
+                          "name":  "黏糊射击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TWIG_SLIME_S",
+        "name":  "树枝史莱姆（小）",
+        "type":  "Normal",
+        "min_hp":  7,
+        "max_hp":  11,
+        "moves":  [
+                      {
+                          "id":  "GOOP",
+                          "name":  "黏液"
+                      },
+                      {
+                          "id":  "TACKLE",
+                          "name":  "冲撞"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "TWO_TAILED_RAT",
+        "name":  "双尾鼠",
+        "type":  "Normal",
+        "min_hp":  17,
+        "max_hp":  21,
+        "moves":  [
+                      {
+                          "id":  "CALL_FOR_BACKUP",
+                          "name":  "呼唤后援"
+                      },
+                      {
+                          "id":  "DISEASE_BITE",
+                          "name":  "疾病啃咬"
+                      },
+                      {
+                          "id":  "SCRATCH",
+                          "name":  "抓挠"
+                      },
+                      {
+                          "id":  "SCREECH",
+                          "name":  "尖声嘶吼"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "VANTOM",
+        "name":  "墨影幻灵",
+        "type":  "Boss",
+        "min_hp":  173,
+        "max_hp":  173,
+        "moves":  [
+                      {
+                          "id":  "DISMEMBER",
+                          "name":  "肢解"
+                      },
+                      {
+                          "id":  "INKY_LANCE",
+                          "name":  "墨水长枪"
+                      },
+                      {
+                          "id":  "INK_BLOT",
+                          "name":  "墨迹"
+                      },
+                      {
+                          "id":  "PREPARE",
+                          "name":  "准备"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "VINE_SHAMBLER",
+        "name":  "藤蔓蹒跚者",
+        "type":  "Normal",
+        "min_hp":  61,
+        "max_hp":  61,
+        "moves":  [
+                      {
+                          "id":  "CHOMP",
+                          "name":  "大啃"
+                      },
+                      {
+                          "id":  "GRASPING_VINES",
+                          "name":  "紧绕藤蔓"
+                      },
+                      {
+                          "id":  "SWIPE",
+                          "name":  "挥击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "WATERFALL_GIANT",
+        "name":  "瀑布巨兽",
+        "type":  "Boss",
+        "min_hp":  240,
+        "max_hp":  240,
+        "moves":  [
+                      {
+                          "id":  "PRESSURE_GUN",
+                          "name":  "压力炮"
+                      },
+                      {
+                          "id":  "PRESSURIZE",
+                          "name":  "增压"
+                      },
+                      {
+                          "id":  "RAM",
+                          "name":  "撞击"
+                      },
+                      {
+                          "id":  "SIPHON",
+                          "name":  "虹吸"
+                      },
+                      {
+                          "id":  "STOMP",
+                          "name":  "践踏"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "WRIGGLER",
+        "name":  "扭动虫",
+        "type":  "Elite",
+        "min_hp":  17,
+        "max_hp":  21,
+        "moves":  [
+                      {
+                          "id":  "PARASITIZE_PLAYER",
+                          "name":  "寄生"
+                      },
+                      {
+                          "id":  "WRIGGLE_STRIKE",
+                          "name":  "扭动打击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    },
+    {
+        "id":  "ZAPBOT",
+        "name":  "电击机器人",
+        "type":  "Normal",
+        "min_hp":  18,
+        "max_hp":  23,
+        "moves":  [
+                      {
+                          "id":  "ZAP",
+                          "name":  "电击"
+                      }
+                  ],
+        "damage_values":  null,
+        "block_values":  null
+    }
+]

@@ -1,0 +1,129 @@
+﻿[
+    {
+        "id":  "DEFECT",
+        "name":  "The Defect",
+        "color":  "blue",
+        "starting_hp":  75,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  3,
+        "unlocks_after":  "Necrobinder",
+        "starting_deck":  [
+                              "StrikeDefect",
+                              "StrikeDefect",
+                              "StrikeDefect",
+                              "StrikeDefect",
+                              "DefendDefect",
+                              "DefendDefect",
+                              "DefendDefect",
+                              "DefendDefect",
+                              "Zap",
+                              "Dualcast"
+                          ],
+        "starting_relics":  [
+                                "CrackedCore"
+                            ]
+    },
+    {
+        "id":  "IRONCLAD",
+        "name":  "The Ironclad",
+        "color":  "red",
+        "starting_hp":  80,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  null,
+        "unlocks_after":  null,
+        "starting_deck":  [
+                              "StrikeIronclad",
+                              "StrikeIronclad",
+                              "StrikeIronclad",
+                              "StrikeIronclad",
+                              "StrikeIronclad",
+                              "DefendIronclad",
+                              "DefendIronclad",
+                              "DefendIronclad",
+                              "DefendIronclad",
+                              "Bash"
+                          ],
+        "starting_relics":  [
+                                "BurningBlood"
+                            ]
+    },
+    {
+        "id":  "NECROBINDER",
+        "name":  "The Necrobinder",
+        "color":  "purple",
+        "starting_hp":  66,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  null,
+        "unlocks_after":  "Regent",
+        "starting_deck":  [
+                              "StrikeNecrobinder",
+                              "StrikeNecrobinder",
+                              "StrikeNecrobinder",
+                              "StrikeNecrobinder",
+                              "DefendNecrobinder",
+                              "DefendNecrobinder",
+                              "DefendNecrobinder",
+                              "DefendNecrobinder",
+                              "Bodyguard",
+                              "Unleash"
+                          ],
+        "starting_relics":  [
+                                "BoundPhylactery"
+                            ]
+    },
+    {
+        "id":  "REGENT",
+        "name":  "The Regent",
+        "color":  "orange",
+        "starting_hp":  75,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  null,
+        "unlocks_after":  "Silent",
+        "starting_deck":  [
+                              "StrikeRegent",
+                              "StrikeRegent",
+                              "StrikeRegent",
+                              "StrikeRegent",
+                              "DefendRegent",
+                              "DefendRegent",
+                              "DefendRegent",
+                              "DefendRegent",
+                              "FallingStar",
+                              "Venerate"
+                          ],
+        "starting_relics":  [
+                                "DivineRight"
+                            ]
+    },
+    {
+        "id":  "SILENT",
+        "name":  "The Silent",
+        "color":  "green",
+        "starting_hp":  70,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  null,
+        "unlocks_after":  null,
+        "starting_deck":  [
+                              "StrikeSilent",
+                              "StrikeSilent",
+                              "StrikeSilent",
+                              "StrikeSilent",
+                              "StrikeSilent",
+                              "DefendSilent",
+                              "DefendSilent",
+                              "DefendSilent",
+                              "DefendSilent",
+                              "DefendSilent",
+                              "Neutralize",
+                              "Survivor"
+                          ],
+        "starting_relics":  [
+                                "RingOfTheSnake"
+                            ]
+    }
+]

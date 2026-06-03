@@ -1,0 +1,25 @@
+# Python caches and virtual environments
+**/__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+**/.venv/
+**/venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Runtime logs and run snapshots
+*.log
+*.jsonl
+sts2-ai-agent-v0.7.2-windows-2/mcp_server/autoplay_ironclad_summary.json
+sts2-ai-agent-v0.7.2-windows-2/mcp_server/state_unknown_full.json
+
+# Archives and generated media
+*.zip
+output/covers/
+
+# Local/editor noise
+.DS_Store
+Thumbs.db
+*.tmp

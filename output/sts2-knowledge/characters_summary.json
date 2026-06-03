@@ -1,0 +1,129 @@
+﻿[
+    {
+        "id":  "DEFECT",
+        "name":  "故障机器人",
+        "color":  "defect",
+        "starting_hp":  75,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  3,
+        "unlocks_after":  null,
+        "starting_deck":  [
+                              "STRIKE_DEFECT",
+                              "STRIKE_DEFECT",
+                              "STRIKE_DEFECT",
+                              "STRIKE_DEFECT",
+                              "DEFEND_DEFECT",
+                              "DEFEND_DEFECT",
+                              "DEFEND_DEFECT",
+                              "DEFEND_DEFECT",
+                              "ZAP",
+                              "DUALCAST"
+                          ],
+        "starting_relics":  [
+                                "CRACKED_CORE"
+                            ]
+    },
+    {
+        "id":  "IRONCLAD",
+        "name":  "铁甲战士",
+        "color":  "ironclad",
+        "starting_hp":  80,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  0,
+        "unlocks_after":  null,
+        "starting_deck":  [
+                              "STRIKE_IRONCLAD",
+                              "STRIKE_IRONCLAD",
+                              "STRIKE_IRONCLAD",
+                              "STRIKE_IRONCLAD",
+                              "STRIKE_IRONCLAD",
+                              "DEFEND_IRONCLAD",
+                              "DEFEND_IRONCLAD",
+                              "DEFEND_IRONCLAD",
+                              "DEFEND_IRONCLAD",
+                              "BASH"
+                          ],
+        "starting_relics":  [
+                                "BURNING_BLOOD"
+                            ]
+    },
+    {
+        "id":  "NECROBINDER",
+        "name":  "亡灵契约师",
+        "color":  "necrobinder",
+        "starting_hp":  66,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  0,
+        "unlocks_after":  null,
+        "starting_deck":  [
+                              "STRIKE_NECROBINDER",
+                              "STRIKE_NECROBINDER",
+                              "STRIKE_NECROBINDER",
+                              "STRIKE_NECROBINDER",
+                              "DEFEND_NECROBINDER",
+                              "DEFEND_NECROBINDER",
+                              "DEFEND_NECROBINDER",
+                              "DEFEND_NECROBINDER",
+                              "BODYGUARD",
+                              "UNLEASH"
+                          ],
+        "starting_relics":  [
+                                "BOUND_PHYLACTERY"
+                            ]
+    },
+    {
+        "id":  "REGENT",
+        "name":  "储君",
+        "color":  "regent",
+        "starting_hp":  75,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  0,
+        "unlocks_after":  null,
+        "starting_deck":  [
+                              "STRIKE_REGENT",
+                              "STRIKE_REGENT",
+                              "STRIKE_REGENT",
+                              "STRIKE_REGENT",
+                              "DEFEND_REGENT",
+                              "DEFEND_REGENT",
+                              "DEFEND_REGENT",
+                              "DEFEND_REGENT",
+                              "FALLING_STAR",
+                              "VENERATE"
+                          ],
+        "starting_relics":  [
+                                "DIVINE_RIGHT"
+                            ]
+    },
+    {
+        "id":  "SILENT",
+        "name":  "静默猎手",
+        "color":  "silent",
+        "starting_hp":  70,
+        "starting_gold":  99,
+        "max_energy":  3,
+        "orb_slots":  0,
+        "unlocks_after":  null,
+        "starting_deck":  [
+                              "STRIKE_SILENT",
+                              "STRIKE_SILENT",
+                              "STRIKE_SILENT",
+                              "STRIKE_SILENT",
+                              "STRIKE_SILENT",
+                              "DEFEND_SILENT",
+                              "DEFEND_SILENT",
+                              "DEFEND_SILENT",
+                              "DEFEND_SILENT",
+                              "DEFEND_SILENT",
+                              "NEUTRALIZE",
+                              "SURVIVOR"
+                          ],
+        "starting_relics":  [
+                                "RING_OF_THE_SNAKE"
+                            ]
+    }
+]

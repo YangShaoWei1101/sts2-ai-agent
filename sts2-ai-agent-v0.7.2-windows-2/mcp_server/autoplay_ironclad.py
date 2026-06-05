@@ -1566,6 +1566,22 @@ def enemy_move_pressure(enemy: "dict[str, Any]") -> "tuple[int, float]":
             damage_hint = max(damage_hint, 24)
         if "terror" in blob or "stun" in blob:
             utility += 12
+    if "fogmog" in enemy_id:
+        if "swipe" in blob:
+            damage_hint = max(damage_hint, 9)
+        if "headbutt" in blob:
+            damage_hint = max(damage_hint, 16)
+        if "illusion" in blob:
+            utility += 14
+    if "nibbit" in enemy_id:
+        if "slice" in blob:
+            damage_hint = max(damage_hint, 6)
+        if "butt" in blob:
+            damage_hint = max(damage_hint, 13)
+        if "hiss" in blob:
+            utility += 10
+    if "eye_with_teeth" in enemy_id and "distract" in blob:
+        utility += 18
     if "power_dance" in blob:
         utility += 20
     if "ritual" in blob:
@@ -6158,14 +6174,37 @@ def choose_event_index(state: "dict[str, Any]") -> "int":
             if is_rest:
                 score -= 28
                 if ratio < 0.35:
+                    score += 48
+                    reasons.append("dense-vegetation-critical-heal")
+                elif ratio < 0.55:
+                    score += 38
+                    reasons.append("dense-vegetation-heal")
+                elif ratio < 0.72:
+                    score += 24
+                    reasons.append("dense-vegetation-safe-rest")
+                elif ratio < 0.90:
                     score += 18
+                    reasons.append("dense-vegetation-heal-window")
                 if plan.combat_ready:
                     score += 10
             if is_trudge:
+                projected_hp = current_hp - hp_loss if current_hp is not None and hp_loss is not None else None
+                projected_ratio = projected_hp / max_hp if projected_hp is not None and max_hp else ratio
                 if current_hp is not None and current_hp <= 11:
                     score -= 120
-                elif ratio < 0.35:
-                    score -= 48
+                    reasons.append("dense-vegetation-lethal-risk")
+                elif projected_hp is not None and projected_hp < 45:
+                    score -= 70
+                    reasons.append("dense-vegetation-low-projected-hp")
+                elif projected_ratio < 0.62:
+                    score -= 54
+                    reasons.append("dense-vegetation-unsafe-projected-hp")
+                elif projected_ratio < 0.72:
+                    score -= 52
+                    reasons.append("dense-vegetation-risky-projected-hp")
+                elif ratio < 0.72:
+                    score -= 24
+                    reasons.append("dense-vegetation-mid-hp-cost")
                 elif plan.wants_removal:
                     score += 8
         scored.append((score, i if idx is None else idx, opt, reasons))

@@ -251,6 +251,10 @@ def main() -> int:
     combat_action, _, reason = ai.choose_combat_action(minimal_zap_state)
     assert combat_action == "play_card", reason
 
+    assert ai.enemy_pressure_damage({"id": "FOGMOG", "hp": 40, "intent": "SWIPE_MOVE"}) >= 9
+    assert ai.enemy_pressure_damage({"id": "NIBBIT", "hp": 42, "intent": "BUTT_MOVE"}) >= 13
+    assert ai.enemy_threat_score({"id": "EYE_WITH_TEETH", "hp": 6, "intent": "DISTRACT_MOVE"}) >= 28
+
     cold_snap_priority_state = {
         **minimal_zap_state,
         "combat": {
@@ -507,6 +511,60 @@ def main() -> int:
     }
     assert ai.event_option_hp_loss(ai.event_option_blob(whisper_state["event"]["options"][1], whisper_state)) == 9
     assert ai.choose_event_index(whisper_state) == 0
+
+    dense_vegetation_risky_state = {
+        "screen": "EVENT",
+        "available_actions": ["choose_event_option"],
+        "event": {
+            "id": "DENSE_VEGETATION",
+            "options": [
+                {
+                    "index": 0,
+                    "id": "TRUDGE_ON",
+                    "text_key": "DENSE_VEGETATION.pages.INITIAL.options.TRUDGE_ON",
+                    "title": "Trudge On",
+                },
+                {
+                    "index": 1,
+                    "id": "REST",
+                    "text_key": "DENSE_VEGETATION.pages.INITIAL.options.REST",
+                    "title": "Rest",
+                },
+            ],
+        },
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 7,
+            "current_hp": 67,
+            "max_hp": 80,
+            "gold": 83,
+            "deck": [
+                *[
+                    {"id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1}
+                    for _ in range(4)
+                ],
+                *[
+                    {"id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1}
+                    for _ in range(4)
+                ],
+                {"id": "BASH", "name": "Bash", "type": "Attack", "rarity": "Basic", "cost": 2},
+                {"id": "SHRUG_IT_OFF", "name": "Shrug It Off", "type": "Skill", "rarity": "Common", "cost": 1},
+                {"id": "BODY_SLAM", "name": "Body Slam", "type": "Attack", "rarity": "Common", "cost": 1},
+                {"id": "COLOSSUS", "name": "Colossus", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                {"id": "HOWL_FROM_BEYOND", "name": "Howl from Beyond", "type": "Attack", "rarity": "Uncommon", "cost": 3},
+                {"id": "FEED", "name": "Feed", "type": "Attack", "rarity": "Rare", "cost": 1},
+                {"id": "THUNDERCLAP", "name": "Thunderclap", "type": "Attack", "rarity": "Common", "cost": 1},
+            ],
+            "relics": [
+                {"id": "BURNING_BLOOD", "name": "Burning Blood"},
+                {"id": "GOLDEN_PEARL", "name": "Golden Pearl"},
+            ],
+        },
+    }
+    assert ai.event_option_hp_loss(
+        ai.event_option_blob(dense_vegetation_risky_state["event"]["options"][0], dense_vegetation_risky_state)
+    ) == 11
+    assert ai.choose_event_index(dense_vegetation_risky_state) == 1
 
     map_potion_state = {
         "screen": "MAP",

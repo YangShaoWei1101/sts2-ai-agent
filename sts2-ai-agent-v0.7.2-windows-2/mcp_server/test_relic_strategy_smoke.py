@@ -2623,6 +2623,149 @@ def main() -> int:
         silent_needs_cycle_state,
     )
 
+    silent_dirty_repeat_attack_reward_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["choose_reward_card", "skip_reward_cards", "select_deck_card"],
+        "selection": {
+            "cards": [
+                {
+                    "index": 0,
+                    "id": "PREDATOR",
+                    "name": "Predator",
+                    "type": "Attack",
+                    "rarity": "Uncommon",
+                    "cost": 2,
+                    "damage": 15,
+                    "description": "Deal 15 damage. Draw 2 more cards next turn.",
+                },
+                {
+                    "index": 1,
+                    "id": "FLICK_FLACK",
+                    "name": "Flick Flack",
+                    "type": "Attack",
+                    "rarity": "Common",
+                    "cost": 1,
+                    "damage": 6,
+                },
+                {
+                    "index": 2,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "damage": 6,
+                },
+            ]
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 16,
+            "current_hp": 34,
+            "max_hp": 77,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize+", "type": "Attack", "rarity": "Basic", "cost": 0, "upgraded": True},
+                    {"id": "SURVIVOR", "name": "Survivor+", "type": "Skill", "rarity": "Basic", "cost": 1, "upgraded": True},
+                    {"id": "SEEKER_STRIKE", "name": "Seeker Strike", "type": "Attack", "rarity": "Uncommon", "cost": 1, "damage": 9},
+                    {"id": "FLICK_FLACK", "name": "Flick Flack", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "CLOAK_AND_DAGGER", "name": "Cloak and Dagger", "type": "Skill", "rarity": "Common", "cost": 1, "block": 6},
+                    {"id": "DODGE_AND_ROLL", "name": "Dodge and Roll", "type": "Skill", "rarity": "Common", "cost": 1, "block": 4},
+                    {"id": "PREDATOR", "name": "Predator", "type": "Attack", "rarity": "Uncommon", "cost": 2, "damage": 15},
+                    {"id": "FLICK_FLACK", "name": "Flick Flack", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "HAND_TRICK", "name": "Hand Trick", "type": "Skill", "rarity": "Uncommon", "cost": 1, "block": 7},
+                    {"id": "FLICK_FLACK", "name": "Flick Flack", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "ENVENOM", "name": "Envenom", "type": "Power", "rarity": "Rare", "cost": 2},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "LEAD_PAPERWEIGHT", "name": "Lead Paperweight"},
+                {"id": "STRAWBERRY", "name": "Strawberry"},
+            ],
+        },
+    }
+    dirty_plan = ai.deck_plan(silent_dirty_repeat_attack_reward_state)
+    assert dirty_plan.needs_draw and dirty_plan.wants_removal, dirty_plan.summary()
+    dirty_predator = silent_dirty_repeat_attack_reward_state["selection"]["cards"][0]
+    dirty_predator_score = ai.score_reward_card(dirty_predator, silent_dirty_repeat_attack_reward_state)
+    assert dirty_predator_score < ai.reward_take_threshold(
+        silent_dirty_repeat_attack_reward_state,
+        dirty_predator,
+        dirty_predator_score,
+    )
+    assert ai.choose_reward_index(silent_dirty_repeat_attack_reward_state) is None
+
+    class RewardRecorder:
+        def __init__(self) -> None:
+            self.deck_selection_attempts = {}
+            self.opened_shop_floors = set()
+            self.calls = []
+
+        def act(self, action, reason, **kwargs):
+            self.calls.append((action, reason, kwargs))
+
+    reward_recorder = RewardRecorder()
+    ai.Autoplayer.step(
+        reward_recorder,
+        silent_dirty_repeat_attack_reward_state,
+        set(silent_dirty_repeat_attack_reward_state["available_actions"]),
+    )
+    assert reward_recorder.calls[0][0] == "skip_reward_cards", reward_recorder.calls
+
+    low_value_card_claim_state = {
+        "screen": "REWARD",
+        "available_actions": ["claim_reward", "resolve_rewards", "collect_rewards_and_proceed"],
+        "reward": {
+            "pending_card_choice": False,
+            "can_proceed": True,
+            "rewards": [
+                {"index": 0, "reward_type": "Gold", "description": "18 Gold", "claimable": True},
+                {
+                    "index": 1,
+                    "reward_type": "Card",
+                    "description": "Add a card to your deck.",
+                    "claimable": True,
+                },
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 4,
+            "current_hp": 45,
+            "max_hp": 70,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(3)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1},
+                    {"id": "LEADING_STRIKE", "name": "Leading Strike", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "DAGGER_THROW", "name": "Dagger Throw", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "BACKFLIP", "name": "Backflip", "type": "Skill", "rarity": "Common", "cost": 1},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "PRECARIOUS_SHEARS", "name": "Precarious Shears"},
+            ],
+        },
+    }
+    assert ai.claim_card_reward_score(low_value_card_claim_state)[0] < ai.claim_card_reward_threshold(
+        low_value_card_claim_state
+    )
+    assert ai.choose_claim_reward_index(low_value_card_claim_state) == 0
+    only_low_value_card_claim_state = {
+        **low_value_card_claim_state,
+        "reward": {
+            **low_value_card_claim_state["reward"],
+            "rewards": [low_value_card_claim_state["reward"]["rewards"][1]],
+        },
+    }
+    assert ai.choose_claim_reward_index(only_low_value_card_claim_state) is None
+
     covered_calculated_gamble_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

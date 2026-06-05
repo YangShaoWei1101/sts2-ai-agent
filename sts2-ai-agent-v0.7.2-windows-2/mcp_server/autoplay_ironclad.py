@@ -171,6 +171,8 @@ SILENT_LOW_DAMAGE_DEFENSE_REWARD_IDS = {
  "DODGE_AND_ROLL",
  "PREPARED",
  "UNTOUCHABLE"}
+SILENT_PSEUDO_DRAW_ATTACK_REWARD_IDS = {
+ "PREDATOR"}
 SILENT_PREMIUM_SURVIVAL_REWARD_IDS = {
  "BLUR",
  "FOOTWORK",
@@ -3226,6 +3228,75 @@ def reward_need_filled(known: "Any", plan: "Any") -> "bool":
     return bool(plan.needs_damage and "attack" in roles or plan.needs_block and "block" in roles or plan.needs_draw and "draw" in roles or plan.needs_scaling and "power_scaling" in roles or plan.needs_aoe and "aoe" in roles)
 
 
+def silent_attack_reward_density_penalty(
+    card: "dict[str, Any]",
+    plan: "Any",
+    roles: "frozenset[str]",
+    cid_norm: str,
+    cost: int,
+    generated_damage: int=0,
+) -> "tuple[float, list[str]]":
+    if str(getattr(plan, "character_id", "") or "").upper() != "SILENT":
+        return 0.0, []
+    if plan.card_count < 16 or plan.needs_damage:
+        return 0.0, []
+    if "attack" not in roles and not is_attack(card):
+        return 0.0, []
+
+    density_policy = policy_table("reward.density_penalty")
+    penalty = 0.0
+    reasons: list[str] = []
+    duplicate_count = int(plan.ids.get(cid_norm, 0) or 0)
+    strategic_roles = roles & {
+        "aoe",
+        "card_generation",
+        "debuff",
+        "poison",
+        "shiv",
+        "strength",
+        "vulnerable",
+        "weak",
+    }
+    real_cycle = bool(roles & {"discard", "energy"}) and cid_norm not in SILENT_PSEUDO_DRAW_ATTACK_REWARD_IDS
+    pseudo_draw_attack = bool(
+        cid_norm in SILENT_PSEUDO_DRAW_ATTACK_REWARD_IDS
+        or ("draw" in roles and is_attack(card) and cost >= 2)
+    )
+
+    if plan.attack_count >= plan.block_count + 2:
+        value = float(density_policy.get("attack_heavy_ratio", 12) or 12)
+        penalty += value
+        reasons.append(f"attack-heavy={value:.0f}")
+    if plan.needs_draw and not real_cycle:
+        value = float(density_policy.get("attack_when_needs_engine", 14) or 14)
+        penalty += value
+        reasons.append(f"needs-engine={value:.0f}")
+    if duplicate_count:
+        value = float(density_policy.get("duplicate_attack_plan_card", 12) or 12)
+        value += min(18.0, max(0, duplicate_count - 1) * 6.0)
+        penalty += value
+        reasons.append(f"duplicate-attack={value:.0f}")
+    if cost >= 2:
+        value = float(density_policy.get("expensive_attack_surplus", 16) or 16)
+        penalty += value
+        reasons.append(f"expensive-attack={value:.0f}")
+    if pseudo_draw_attack:
+        value = float(density_policy.get("pseudo_draw_attack", 18) or 18)
+        value += float(density_policy.get("slow_engine_attack", 24) or 24)
+        penalty += value
+        reasons.append(f"pseudo-draw-attack={value:.0f}")
+    if not strategic_roles and generated_damage <= 0 and not real_cycle:
+        value = float(density_policy.get("attack_surplus", 18) or 18)
+        penalty += value
+        reasons.append(f"attack-surplus={value:.0f}")
+    if plan.wants_removal and plan.removable_count >= 8:
+        value = min(18.0, max(0, plan.removable_count - 6) * 4.0)
+        if value:
+            penalty += value
+            reasons.append(f"dirty-deck={value:.0f}")
+    return penalty, reasons
+
+
 def reward_take_threshold(state, card, score):
     plan = deck_plan(state)
     table = policy_table("reward.take_threshold")
@@ -5496,6 +5567,18 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
             reasons.append(f"boss-prep-slow-power={penalty:.0f}")
         score += survival_bonus
 
+    density_penalty, density_reasons = silent_attack_reward_density_penalty(
+        card,
+        plan,
+        roles,
+        cid_norm,
+        cost,
+        generated_damage,
+    )
+    if density_penalty:
+        score -= density_penalty
+        reasons.extend(density_reasons)
+
     knowledge_score, knowledge_reasons = CARD_KNOWLEDGE.reward_modifier(card,
       state,
       damage=dmg,
@@ -5605,6 +5688,21 @@ def reward_take_threshold(state, card, score):
         if plan.focused and known.archetypes and not plan.wants_archetype(known):
             if not known.roles & REWARD_UTILITY_ROLES:
                 threshold += float(table.get("off_plan_focused_bonus", 12) or 0)
+        cid_norm = normalized_card_id(card)
+        if (
+            str(getattr(plan, "character_id", "") or "").upper() == "SILENT"
+            and plan.card_count >= 18
+            and not plan.needs_damage
+            and "attack" in known.roles
+        ):
+            duplicate_count = int(plan.ids.get(cid_norm, 0) or 0)
+            density_policy = policy_table("reward.density_penalty")
+            if duplicate_count:
+                threshold += min(18.0, 6.0 + duplicate_count * 4.0)
+            if plan.needs_draw and cid_norm in SILENT_PSEUDO_DRAW_ATTACK_REWARD_IDS:
+                threshold += float(density_policy.get("pseudo_draw_attack", 18) or 18)
+            if plan.wants_removal and plan.removable_count >= 8:
+                threshold += min(12.0, max(0, plan.removable_count - 6) * 3.0)
     removal_debt = plan.curse_status_count * 2 + max(0, plan.removable_count - 5)
     if removal_debt and not (matching_plan or utility or fills_need):
         threshold += min(18.0, 3.0 * removal_debt)
@@ -5654,6 +5752,28 @@ def claim_card_reward_score(state: "dict[str, Any]") -> "tuple[float, list[str]]
         score -= min(10.0, profile.reward_selectivity * 0.5)
         reasons.append("relic-selective")
     return score, reasons
+
+
+def claim_card_reward_threshold(state: "dict[str, Any]") -> "float":
+    plan = deck_plan(state)
+    threshold = 28.0 if plan.card_count <= 12 else 36.0
+    if plan.needs_damage or plan.needs_block:
+        threshold -= 6.0
+    elif plan.needs_draw or plan.needs_scaling or plan.needs_aoe:
+        threshold -= 2.0
+    else:
+        threshold += 8.0
+    if plan.combat_ready and plan.focused:
+        threshold += 6.0
+    if plan.wants_removal and plan.removable_count >= 8:
+        threshold += 8.0
+    if plan.card_count >= 18:
+        threshold += 6.0
+    if plan.curse_status_count:
+        threshold += 10.0 + min(10.0, plan.curse_status_count * 4.0)
+    if relic_profile(state).reward_selectivity and plan.card_count >= 16:
+        threshold += min(8.0, relic_profile(state).reward_selectivity * 0.4)
+    return max(18.0, threshold)
 
 
 def potion_slot_counts(state: "dict[str, Any]") -> "tuple[int, int]":
@@ -7089,6 +7209,21 @@ def choose_claim_reward_index(state: "dict[str, Any]") -> "int | None":
             card_score, card_reasons = claim_card_reward_score(state)
             score += card_score
             reasons.extend(card_reasons)
+            card_threshold = claim_card_reward_threshold(state)
+            if score < card_threshold and (
+                "resolve_rewards" in as_actions(state)
+                or "collect_rewards_and_proceed" in as_actions(state)
+                or "skip_reward_cards" in as_actions(state)
+            ):
+                reasons.append(f"below-card-claim-threshold:{card_threshold:.0f}")
+                scored_options.append({'idx':int(effective_idx),
+                 'score':round(score, 1),
+                 'reward_type':reward.get("reward_type") or reward.get("type"),
+                 'card':compact_card(reward) if (reward.get("card_id") or reward.get("id")) else None,
+                 'relic':None,
+                 'reasons':reasons,
+                 'text':reward.get("text") or reward.get("name") or reward.get("label") or reward.get("description")})
+                continue
         elif "potion" in blob or reward.get("potion_id"):
             relic_item_score, relic_item_reasons = relic_shop_item_modifier(reward, state)
             score += 15 + relic_item_score
@@ -7478,6 +7613,13 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
     if "confirm_selection" in actions:
         self.act("confirm_selection", "confirm completed selection")
         return
+    if "choose_reward_card" in actions:
+        idx = choose_reward_index(state)
+        if idx is None and "skip_reward_cards" in actions:
+            self.act("skip_reward_cards", "skip weak rewards")
+        else:
+            self.act("choose_reward_card", "pick best reward card", option_index=(idx or 0))
+        return
     if "select_deck_card" in actions:
         readonly_reason = readonly_card_selection_reason(state)
         if readonly_reason:
@@ -7491,13 +7633,6 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
         idx = choose_deck_selection_index(state, attempts)
         attempts.add(idx)
         self.act("select_deck_card", "select deck card for current screen", option_index=idx)
-        return
-    if "choose_reward_card" in actions:
-        idx = choose_reward_index(state)
-        if idx is None and "skip_reward_cards" in actions:
-            self.act("skip_reward_cards", "skip weak rewards")
-        else:
-            self.act("choose_reward_card", "pick best reward card", option_index=(idx or 0))
         return
 
     if actions and actions.issubset({"use_potion", "discard_potion"}):

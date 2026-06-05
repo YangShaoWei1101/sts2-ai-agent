@@ -3401,6 +3401,61 @@ def claimable_reward_options(state: "dict[str, Any]") -> "list[dict[str, Any]]":
     return []
 
 
+def reward_effective_index(reward: "dict[str, Any]", position: int) -> int:
+    idx = first_number(reward.get("index") or reward.get("i"))
+    return int(position if idx is None else idx)
+
+
+def reward_claim_is_card_pack(reward: "dict[str, Any]") -> bool:
+    reward_type = str(reward.get("reward_type") or reward.get("type") or "").lower()
+    blob = text_blob(reward)
+    if reward.get("relic_id") or "relic" in blob or "閬楃墿" in blob:
+        return False
+    if reward.get("potion_id") or "potion" in blob or "鑽按" in blob:
+        return False
+    return bool(
+        "card" in reward_type
+        or "card" in blob
+        or reward.get("card_id")
+        or reward.get("card")
+        or "鍗＄墝" in blob
+    )
+
+
+def card_reward_claim_key(state: "dict[str, Any]", reward: "dict[str, Any]", position: int) -> str:
+    run = state.get("run") or {}
+    floor = first_number(run.get("floor") or run.get("current_floor")) or state.get("floor")
+    run_id = state.get("run_id") or run.get("run_id") or run.get("id") or ""
+    deck = run.get("deck") if isinstance(run.get("deck"), list) else []
+    deck_count = len(deck) if deck else state.get("deck_count")
+    reward_type = str(reward.get("reward_type") or reward.get("type") or "").strip().lower()
+    text = str(reward.get("text") or reward.get("name") or reward.get("label") or reward.get("description") or "")
+    return "|".join(
+        [
+            str(run_id),
+            str(floor),
+            str(deck_count),
+            str(reward_effective_index(reward, position)),
+            reward_type,
+            text[:80],
+        ]
+    )
+
+
+def claimable_reward_by_effective_index(
+    state: "dict[str, Any]",
+    wanted_idx: "int | None",
+) -> "tuple[dict[str, Any] | None, int | None]":
+    if wanted_idx is None:
+        return None, None
+    for position, reward in enumerate(claimable_reward_options(state)):
+        if reward.get("claimed") or reward.get("disabled") or reward.get("is_locked") or reward.get("claimable") is False:
+            continue
+        if reward_effective_index(reward, position) == int(wanted_idx):
+            return reward, position
+    return None, None
+
+
 def reward_is_potion(reward: "dict[str, Any]") -> "bool":
     reward_type = str(reward.get("reward_type") or reward.get("type") or "").lower()
     blob = text_blob(reward)
@@ -7349,7 +7404,10 @@ def choose_deck_selection_index(state: "dict[str, Any]", avoid: "set[int] | None
     return chosen
 
 
-def choose_claim_reward_index(state: "dict[str, Any]") -> "int | None":
+def choose_claim_reward_index(
+    state: "dict[str, Any]",
+    skipped_card_claim_keys: "set[str] | None" = None,
+) -> "int | None":
     rewards = claimable_reward_options(state)
     best = (-999.0, None, None, [])
     scored_options = []
@@ -7357,8 +7415,7 @@ def choose_claim_reward_index(state: "dict[str, Any]") -> "int | None":
         if reward.get("claimed") or reward.get("disabled") or reward.get("is_locked") or reward.get("claimable") is False:
             continue
         if reward_blocked_by_inventory(reward, state):
-            idx = first_number(reward.get("index") or reward.get("i"))
-            effective_idx = i if idx is None else idx
+            effective_idx = reward_effective_index(reward, i)
             scored_options.append({'idx':int(effective_idx),
              'score':-120.0,
              'reward_type':reward.get("reward_type") or reward.get("type"),
@@ -7367,11 +7424,21 @@ def choose_claim_reward_index(state: "dict[str, Any]") -> "int | None":
              'reasons':["potion-slots-full"],
              'text':reward.get("text") or reward.get("name") or reward.get("label") or reward.get("description")})
             continue
-        idx = first_number(reward.get("index") or reward.get("i"))
-        effective_idx = i if idx is None else idx
+        effective_idx = reward_effective_index(reward, i)
         blob = text_blob(reward)
         score = 0.0
         reasons = []
+        if reward_claim_is_card_pack(reward) and skipped_card_claim_keys:
+            claim_key = card_reward_claim_key(state, reward, i)
+            if claim_key in skipped_card_claim_keys:
+                scored_options.append({'idx':int(effective_idx),
+                 'score':-140.0,
+                 'reward_type':reward.get("reward_type") or reward.get("type"),
+                 'card':compact_card(reward) if (reward.get("card_id") or reward.get("id")) else None,
+                 'relic':None,
+                 'reasons':["skipped-card-reward"],
+                 'text':reward.get("text") or reward.get("name") or reward.get("label") or reward.get("description")})
+                continue
         if "relic" in blob or reward.get("relic_id") or "遗物" in blob:
             relic_score, relic_reasons = relic_pickup_score(reward, state)
             score += 70 + relic_score
@@ -7532,6 +7599,10 @@ class Autoplayer:
     unknown_waits: "int"
     readonly_selection_waits = 0
     readonly_selection_waits: "int"
+    skipped_reward_claims = None
+    skipped_reward_claims: "set[str] | None"
+    pending_card_reward_claim_key = None
+    pending_card_reward_claim_key: "str | None"
 
     def act(self, action, reason, **kwargs):
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -7575,6 +7646,8 @@ class Autoplayer:
             self.opened_shop_floors = set()
         if self.deck_selection_attempts is None:
             self.deck_selection_attempts = {}
+        if self.skipped_reward_claims is None:
+            self.skipped_reward_claims = set()
         while self.steps < max_steps:
             state = self.client.get_state()
             self.steps += 1
@@ -7877,8 +7950,17 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
     if "choose_reward_card" in actions:
         idx = choose_reward_index(state)
         if idx is None and "skip_reward_cards" in actions:
+            pending_key = getattr(self, "pending_card_reward_claim_key", None)
+            if pending_key:
+                skipped_claims = getattr(self, "skipped_reward_claims", None)
+                if skipped_claims is None:
+                    skipped_claims = set()
+                    self.skipped_reward_claims = skipped_claims
+                skipped_claims.add(pending_key)
+                self.pending_card_reward_claim_key = None
             self.act("skip_reward_cards", "skip weak rewards")
         else:
+            self.pending_card_reward_claim_key = None
             self.act("choose_reward_card", "pick best reward card", option_index=(idx or 0))
         return
     if "select_deck_card" in actions:
@@ -7941,7 +8023,8 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
         return
 
     if "claim_reward" in actions:
-        idx = choose_claim_reward_index(state)
+        skipped_claims = getattr(self, "skipped_reward_claims", None)
+        idx = choose_claim_reward_index(state, skipped_claims)
         if idx is None:
             if "resolve_rewards" in actions:
                 self.act("resolve_rewards", "resolve rewards and skip blocked reward", option_index=-1)
@@ -7951,6 +8034,11 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
                 return
             log("claim reward unavailable; waiting", compact_state(state))
             return
+        reward, reward_position = claimable_reward_by_effective_index(state, idx)
+        if reward is not None and reward_position is not None and reward_claim_is_card_pack(reward):
+            self.pending_card_reward_claim_key = card_reward_claim_key(state, reward, reward_position)
+        else:
+            self.pending_card_reward_claim_key = None
         self.act("claim_reward", "claim useful reward", option_index=(idx or 0))
         return
     if "resolve_rewards" in actions:

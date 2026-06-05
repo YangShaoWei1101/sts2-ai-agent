@@ -3281,6 +3281,66 @@ def main() -> int:
     )
     assert ai.choose_claim_reward_index(critical_survival_card_claim_state) == 1
 
+    reward_loop_recorder = RewardRecorder()
+    ai.Autoplayer.step(
+        reward_loop_recorder,
+        critical_survival_card_claim_state,
+        set(critical_survival_card_claim_state["available_actions"]),
+    )
+    assert reward_loop_recorder.calls[-1][0] == "claim_reward", reward_loop_recorder.calls
+    assert reward_loop_recorder.calls[-1][2]["option_index"] == 1
+    pending_key = reward_loop_recorder.pending_card_reward_claim_key
+    assert pending_key
+    weak_opened_card_reward_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["choose_reward_card", "skip_reward_cards"],
+        "selection": {
+            "cards": [
+                {
+                    "index": 0,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "damage": 6,
+                }
+            ]
+        },
+        "run": critical_survival_card_claim_state["run"],
+    }
+    ai.Autoplayer.step(
+        reward_loop_recorder,
+        weak_opened_card_reward_state,
+        set(weak_opened_card_reward_state["available_actions"]),
+    )
+    assert reward_loop_recorder.calls[-1][0] == "skip_reward_cards", reward_loop_recorder.calls
+    assert pending_key in reward_loop_recorder.skipped_reward_claims
+    assert (
+        ai.choose_claim_reward_index(critical_survival_card_claim_state, reward_loop_recorder.skipped_reward_claims)
+        == 0
+    )
+    ai.Autoplayer.step(
+        reward_loop_recorder,
+        critical_survival_card_claim_state,
+        set(critical_survival_card_claim_state["available_actions"]),
+    )
+    assert reward_loop_recorder.calls[-1][0] == "claim_reward", reward_loop_recorder.calls
+    assert reward_loop_recorder.calls[-1][2]["option_index"] == 0
+    only_skipped_card_reward_state = {
+        **critical_survival_card_claim_state,
+        "reward": {
+            **critical_survival_card_claim_state["reward"],
+            "rewards": [critical_survival_card_claim_state["reward"]["rewards"][1]],
+        },
+    }
+    ai.Autoplayer.step(
+        reward_loop_recorder,
+        only_skipped_card_reward_state,
+        set(only_skipped_card_reward_state["available_actions"]),
+    )
+    assert reward_loop_recorder.calls[-1][0] == "resolve_rewards", reward_loop_recorder.calls
+
     covered_calculated_gamble_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

@@ -586,6 +586,56 @@ def main() -> int:
     )
     assert ai.choose_map_index(late_elite_state) == 1
 
+    early_unsafe_elite_state = {
+        "screen": "MAP",
+        "available_actions": ["choose_map_node"],
+        "run": {
+            "character_id": "SILENT",
+            "floor": 6,
+            "current_hp": 37,
+            "max_hp": 70,
+            "gold": 116,
+            "potions": [
+                {"index": 0, "occupied": False},
+                {"index": 1, "occupied": False},
+                {"index": 2, "occupied": False},
+            ],
+            "deck": [
+                *[
+                    {"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1}
+                    for _ in range(5)
+                ],
+                *[
+                    {"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1}
+                    for _ in range(5)
+                ],
+                {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1},
+                {"id": "DAGGER_THROW", "name": "Dagger Throw", "type": "Attack", "rarity": "Common", "cost": 1},
+                {"id": "PREDATOR", "name": "Predator", "type": "Attack", "rarity": "Uncommon", "cost": 2},
+                {"id": "BACKFLIP", "name": "Backflip", "type": "Skill", "rarity": "Common", "cost": 1},
+            ],
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "PRECARIOUS_SHEARS", "name": "Precarious Shears"},
+                {"id": "BAG_OF_MARBLES", "name": "Bag of Marbles"},
+                {"id": "SHURIKEN", "name": "Shuriken"},
+            ],
+        },
+        "map": {
+            "options": [
+                map_node(0, 6, 4, "Elite"),
+                map_node(1, 6, 5, "Shop"),
+            ],
+            "nodes": [
+                map_node(0, 6, 4, "Elite"),
+                map_node(1, 6, 5, "Shop"),
+            ],
+        },
+    }
+    assert ai.early_elite_route_penalty(early_unsafe_elite_state["map"]["options"][0], early_unsafe_elite_state) > 0
+    assert ai.choose_map_index(early_unsafe_elite_state) == 1
+
     early_removal_shop_state = {
         "screen": "MAP",
         "available_actions": ["choose_map_node"],
@@ -2404,6 +2454,40 @@ def main() -> int:
     }
     combat_action, _, reason = ai.choose_combat_action(doomed_wail_state)
     assert combat_action == "end_turn", reason
+
+    doomed_block_mitigation_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 1,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "TERROR_EEL", "hp": 26, "intent": "ThrashMove"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 7,
+            "current_hp": 5,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(doomed_block_mitigation_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] == 0, reason
 
     zero_energy_x_setup_state = {
         "screen": "COMBAT",

@@ -1559,6 +1559,13 @@ def enemy_move_pressure(enemy: "dict[str, Any]") -> "tuple[int, float]":
             damage_hint = max(damage_hint, 25)
         if "siphon_move" in blob:
             utility += 10
+    if "terror_eel" in enemy_id:
+        if "thrashmove" in blob or "thrash" in blob:
+            damage_hint = max(damage_hint, 12)
+        if "crash" in blob:
+            damage_hint = max(damage_hint, 24)
+        if "terror" in blob or "stun" in blob:
+            utility += 12
     if "power_dance" in blob:
         utility += 20
     if "ritual" in blob:
@@ -5215,12 +5222,29 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and not card_grants_combat_resource(card)
         and not card_has_hand_end_damage(card)
     )
+    best_last_ditch_mitigation = bool(
+        not best_self_harm
+        and not card_has_consuming_or_harmful_cost(card, state)
+        and not enemy_punishes_extra_card_play(state, card)
+        and (
+            (
+                best_block >= policy_number("combat.last_ditch_block_min", 4.0)
+                and best_is_pure_block
+            )
+            or best_incoming_reduced_by >= policy_number("combat.last_ditch_damage_reduce_min", 4.0)
+            or (
+                best_is_turn_strength_debuff
+                and best_incoming_reduced_by >= policy_number("combat.last_ditch_damage_reduce_min", 4.0)
+            )
+        )
+    )
     if (
         best_would_die
         and not can_sweep_lethal
         and not has_revive_safety(state)
         and not best_doomed_followup_out
         and not current_turn_damage_spend
+        and not best_last_ditch_mitigation
     ):
         return (
          "end_turn", {}, f"avoid doomed survival line score={best_score:.1f}")
@@ -5828,6 +5852,39 @@ def late_elite_route_penalty(node: "dict[str, Any]", state: "dict[str, Any]") ->
     return penalty
 
 
+def early_elite_route_penalty(node: "dict[str, Any]", state: "dict[str, Any]") -> "float":
+    blob = text_blob(node)
+    if "elite" not in blob:
+        return 0.0
+    hp, max_hp = player_hp(state)
+    ratio = hp / max_hp if (hp and max_hp) else 1.0
+    run = state.get("run") or {}
+    floor = first_number(run.get("floor") or run.get("current_floor")) or 0
+    if floor >= policy_number("map.late_elite_floor", 10.0):
+        return 0.0
+    plan = deck_plan(state)
+    occupied_potions, potion_slots = potion_slot_counts(state)
+    has_potion = occupied_potions > 0 or potion_slots <= 0
+    if ratio >= 0.82 and has_potion and getattr(plan, "combat_ready", False):
+        return 0.0
+    penalty = 0.0
+    if ratio < 0.72:
+        penalty += policy_number("map.early_elite_mid_hp_penalty", 22.0)
+    if ratio < 0.60:
+        penalty += policy_number("map.early_elite_low_hp_penalty", 30.0)
+    if ratio < 0.50:
+        penalty += policy_number("map.early_elite_critical_hp_penalty", 40.0)
+    if not has_potion:
+        penalty += policy_number("map.early_elite_empty_potion_penalty", 18.0)
+    basic_count = getattr(plan, "basic_count", 0)
+    if basic_count >= policy_number("map.elite_basic_count_threshold", 8.0):
+        penalty += policy_number("map.early_elite_basic_penalty", 14.0)
+    gold = first_number(run.get("gold") or run.get("player_gold")) or 0
+    if getattr(plan, "wants_removal", False) and gold >= 75:
+        penalty += policy_number("map.early_elite_removal_penalty", 12.0)
+    return penalty
+
+
 def map_risk_score(node, state, depth=7):
     hp, max_hp = player_hp(state)
     ratio = hp / max_hp if (hp and max_hp) else 1.0
@@ -5857,6 +5914,7 @@ def map_risk_score(node, state, depth=7):
             penalty += policy_number("map.low_hp_elite_penalty", 80.0)
             if ratio < 0.35:
                 penalty += policy_number("map.critical_hp_elite_penalty", 120.0)
+            penalty += early_elite_route_penalty(candidate, state)
             penalty += late_elite_route_penalty(candidate, state)
         if any((k in blob for k in ('monster', 'combat', 'enemy', 'fight', 'normal', '普通', '敌'))):
             penalty += policy_number("map.low_hp_combat_penalty", 18.0)
@@ -5948,11 +6006,13 @@ def node_score(node: "dict[str, Any]", state: "dict[str, Any]") -> "float":
 
     if is_elite:
         elite_ready = ratio > 0.78 and non_basic >= 4 and plan.combat_ready
-        if profile.route_aggression >= 12 and ratio > 0.66:
+        early_elite_penalty = early_elite_route_penalty(node, state)
+        if profile.route_aggression >= 12 and ratio > 0.66 and early_elite_penalty <= 0:
             elite_ready = True
         score += 26 if elite_ready else -42
         if elite_ready:
             score += policy_number("map.combat_ready_elite_bonus", 0.0)
+        score -= early_elite_penalty
         score -= late_elite_route_penalty(node, state)
     elif is_combat:
         score += 10 if ratio > 0.48 else -6

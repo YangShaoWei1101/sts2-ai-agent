@@ -255,6 +255,99 @@ def main() -> int:
     assert ai.enemy_pressure_damage({"id": "NIBBIT", "hp": 42, "intent": "BUTT_MOVE"}) >= 13
     assert ai.enemy_threat_score({"id": "EYE_WITH_TEETH", "hp": 6, "intent": "DISTRACT_MOVE"}) >= 28
 
+    class FreshCombatClient:
+        def __init__(self, state: dict) -> None:
+            self.state = state
+
+        def get_state(self) -> dict:
+            return self.state
+
+    class RecordingClient(FreshCombatClient):
+        def __init__(self, state: dict) -> None:
+            super().__init__(state)
+            self.executed: list[tuple[str, dict]] = []
+
+        def execute_action(self, action: str, **kwargs) -> dict:
+            self.executed.append((action, kwargs))
+            return {"ok": True}
+
+    fresh_combat_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 1,
+            "player": {"block": 0},
+            "hand": [
+                {"index": 0, "id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "cost": 1, "block": 5, "playable": True},
+                {
+                    "index": 3,
+                    "id": "NEUTRALIZE",
+                    "name": "Neutralize",
+                    "type": "Attack",
+                    "cost": 0,
+                    "damage": 3,
+                    "playable": True,
+                    "requires_target": True,
+                },
+            ],
+            "enemies": [{"index": 0, "id": "FOGMOG", "hp": 3, "intent": "SWIPE_MOVE"}],
+        },
+        "run": {"character_id": "SILENT", "current_hp": 40, "max_hp": 70, "deck": [], "relics": []},
+    }
+    autoplayer = ai.Autoplayer(FreshCombatClient(fresh_combat_state), 0, 0, None, 1, 1, set(), {}, 0)
+    fresh_action, fresh_kwargs, fresh_reason = autoplayer.combat_action_from_fresh_state(
+        "play_card",
+        {"card_index": 4, "target_index": 0},
+        "stale combat action",
+    )
+    assert fresh_action == "play_card", fresh_reason
+    assert fresh_kwargs["card_index"] == 3, fresh_reason
+
+    fresh_selection_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["select_deck_card"],
+        "selection": {"prompt": "Draw pile", "max": 0, "min": 0, "cards": []},
+        "run": {"character_id": "SILENT", "current_hp": 40, "max_hp": 70, "deck": [], "relics": []},
+    }
+    autoplayer = ai.Autoplayer(FreshCombatClient(fresh_selection_state), 0, 0, None, 1, 1, set(), {}, 0)
+    fresh_action, fresh_kwargs, fresh_reason = autoplayer.combat_action_from_fresh_state(
+        "play_card",
+        {"card_index": 1, "target_index": 0},
+        "stale combat action",
+    )
+    assert fresh_action == "wait", fresh_reason
+    assert fresh_kwargs == {}, fresh_reason
+
+    cards_view_state = {
+        "screen": "CARDS_VIEW",
+        "available_actions": ["close_cards_view"],
+        "in_combat": True,
+        "combat": {"hand": [], "enemies": []},
+        "run": {"character_id": "SILENT", "deck": [], "relics": []},
+    }
+    close_client = RecordingClient(cards_view_state)
+    autoplayer = ai.Autoplayer(close_client, 0, 0, None, 1, 1, set(), {}, 0)
+    autoplayer.step(cards_view_state, ai.as_actions(cards_view_state))
+    assert close_client.executed[0][0] == "close_cards_view"
+
+    original_close_readonly = ai.close_readonly_card_selection_fallback
+    try:
+        fallback_calls = []
+
+        def fake_close_readonly() -> bool:
+            fallback_calls.append(True)
+            return True
+
+        ai.close_readonly_card_selection_fallback = fake_close_readonly
+        readonly_client = RecordingClient(fresh_selection_state)
+        autoplayer = ai.Autoplayer(readonly_client, 0, 0, None, 1, 1, set(), {}, 0)
+        autoplayer.readonly_selection_waits = 8
+        autoplayer.step(fresh_selection_state, ai.as_actions(fresh_selection_state))
+        assert fallback_calls
+        assert readonly_client.executed == []
+    finally:
+        ai.close_readonly_card_selection_fallback = original_close_readonly
+
     cold_snap_priority_state = {
         **minimal_zap_state,
         "combat": {

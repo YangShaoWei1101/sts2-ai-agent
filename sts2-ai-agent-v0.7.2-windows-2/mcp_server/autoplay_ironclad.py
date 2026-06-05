@@ -7403,6 +7403,42 @@ def click_divine_unknown_fallback() -> "bool":
                 del exc
 
 
+def close_readonly_card_selection_fallback() -> "bool":
+    if os.name != "nt":
+        return False
+    try:
+        user32 = ctypes.windll.user32
+    except AttributeError:
+        return False
+    try:
+        hwnd = None
+        for title in ('Slay the Spire 2', '127.0.0.1'):
+            hwnd = user32.FindWindowW(None, title)
+            if hwnd:
+                break
+
+        if not hwnd:
+            return False
+        user32.ShowWindow(hwnd, 9)
+        user32.SetForegroundWindow(hwnd)
+        time.sleep(0.15)
+        vk_escape = 0x1B
+        keyeventf_keyup = 0x0002
+        user32.keybd_event(vk_escape, 0, 0, 0)
+        time.sleep(0.05)
+        user32.keybd_event(vk_escape, 0, keyeventf_keyup, 0)
+        user32.PostMessageW(hwnd, 0x0100, vk_escape, 0)
+        user32.PostMessageW(hwnd, 0x0101, vk_escape, 0)
+        return True
+    except Exception as exc:
+        try:
+            log(f"readonly card selection fallback failed {type(exc).__name__}: {exc}")
+            return False
+        finally:
+            exc = None
+            del exc
+
+
 @dataclass
 class Autoplayer:
     client: "Sts2Client"
@@ -7422,6 +7458,8 @@ class Autoplayer:
     deck_selection_attempts: "dict[str, set[int]] | None"
     unknown_waits = 0
     unknown_waits: "int"
+    readonly_selection_waits = 0
+    readonly_selection_waits: "int"
 
     def act(self, action, reason, **kwargs):
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -7429,6 +7467,36 @@ class Autoplayer:
         return (self.client.execute_action)(
  action, **kwargs, **{"client_context": {'source':"codex-autoplayer", 
                             'reason':reason}})
+
+    def combat_action_from_fresh_state(self, action, kwargs, reason):
+        if action != "play_card":
+            return action, kwargs, reason
+        try:
+            fresh_state = self.client.get_state()
+        except Exception as exc:
+            log(f"fresh combat state unavailable {type(exc).__name__}: {exc}")
+            return action, kwargs, reason
+        fresh_actions = as_actions(fresh_state)
+        if "play_card" not in fresh_actions:
+            if "close_cards_view" in fresh_actions:
+                return "close_cards_view", {}, "fresh combat state opened card view"
+            if "end_turn" in fresh_actions and fresh_state.get("screen") == "COMBAT":
+                return "end_turn", {}, "fresh combat state lost play_card; end turn"
+            log("fresh combat state changed before play", compact_state(fresh_state))
+            return "wait", {}, "fresh combat state changed before play"
+        fresh_action, fresh_kwargs, fresh_reason = choose_combat_action(fresh_state)
+        if fresh_action == "play_card" and "card_index" in fresh_kwargs:
+            stale_idx = kwargs.get("card_index")
+            fresh_idx = fresh_kwargs.get("card_index")
+            if stale_idx != fresh_idx:
+                log(
+                    f"fresh combat action adjusted card_index {stale_idx}->{fresh_idx}",
+                    compact_state(fresh_state),
+                )
+            return fresh_action, fresh_kwargs, f"fresh-state {fresh_reason}"
+        if fresh_action in fresh_actions:
+            return fresh_action, fresh_kwargs, f"fresh-state {fresh_reason}"
+        return action, kwargs, reason
 
     def run(self, max_steps: "int"=1200) -> "dict[str, Any]":
         if self.opened_shop_floors is None:
@@ -7443,6 +7511,7 @@ class Autoplayer:
                 log(f"screen={screen}", compact_state(state))
                 self.last_screen = screen
                 if screen != "CARD_SELECTION":
+                    self.readonly_selection_waits = 0
                     if self.deck_selection_attempts is not None:
                         self.deck_selection_attempts.clear()
             if state.get("game_over") or screen == "GAME_OVER":
@@ -7548,6 +7617,9 @@ class Autoplayer:
         if "confirm_selection" in actions:
             self.act("confirm_selection", "confirm completed selection")
             return
+        if "close_cards_view" in actions:
+            self.act("close_cards_view", "close card view")
+            return
         if "choose_reward_card" in actions:
             idx = choose_reward_index(state)
             if idx is None and "skip_reward_cards" in actions:
@@ -7558,7 +7630,18 @@ class Autoplayer:
         if "select_deck_card" in actions:
             readonly_reason = readonly_card_selection_reason(state)
             if readonly_reason:
+                self.readonly_selection_waits += 1
+                if self.readonly_selection_waits <= 8:
+                    log(f"readonly card selection waiting: {readonly_reason}", compact_state(state))
+                    time.sleep(0.5)
+                    return
+                if close_readonly_card_selection_fallback():
+                    log(f"readonly card selection close fallback: {readonly_reason}", compact_state(state))
+                    self.readonly_selection_waits = 0
+                    time.sleep(1)
+                    return
                 raise ReadOnlyCardSelection(readonly_reason)
+            self.readonly_selection_waits = 0
             selection = state.get("selection") or {}
             run = state.get("run") or {}
             cards = selection.get("cards") if isinstance(selection.get("cards"), list) else []
@@ -7585,6 +7668,10 @@ class Autoplayer:
         if "play_card" in actions or state.get("in_combat"):
             action, kwargs, reason = choose_combat_action(state)
             if action in actions:
+                action, kwargs, reason = self.combat_action_from_fresh_state(action, kwargs, reason)
+                if action == "wait":
+                    log(reason, compact_state(state))
+                    return
                 (self.act)(action, reason, **kwargs)
             else:
                 if "end_turn" in actions:
@@ -7712,6 +7799,9 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
     if "confirm_selection" in actions:
         self.act("confirm_selection", "confirm completed selection")
         return
+    if "close_cards_view" in actions:
+        self.act("close_cards_view", "close card view")
+        return
     if "choose_reward_card" in actions:
         idx = choose_reward_index(state)
         if idx is None and "skip_reward_cards" in actions:
@@ -7722,7 +7812,18 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
     if "select_deck_card" in actions:
         readonly_reason = readonly_card_selection_reason(state)
         if readonly_reason:
+            self.readonly_selection_waits += 1
+            if self.readonly_selection_waits <= 8:
+                log(f"readonly card selection waiting: {readonly_reason}", compact_state(state))
+                time.sleep(0.5)
+                return
+            if close_readonly_card_selection_fallback():
+                log(f"readonly card selection close fallback: {readonly_reason}", compact_state(state))
+                self.readonly_selection_waits = 0
+                time.sleep(1)
+                return
             raise ReadOnlyCardSelection(readonly_reason)
+        self.readonly_selection_waits = 0
         selection = state.get("selection") or {}
         run = state.get("run") or {}
         cards = selection.get("cards") if isinstance(selection.get("cards"), list) else []
@@ -7756,6 +7857,10 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
     if "play_card" in actions or state.get("in_combat"):
         action, kwargs, reason = choose_combat_action(state)
         if action in actions:
+            action, kwargs, reason = self.combat_action_from_fresh_state(action, kwargs, reason)
+            if action == "wait":
+                log(reason, compact_state(state))
+                return
             self.act(action, reason, **kwargs)
         elif "end_turn" in actions:
             self.act("end_turn", "combat fallback end turn")

@@ -38,6 +38,10 @@ CARDS_PATH = Path(__file__).with_name("data") / "eng" / "cards.json"
 TARGET_CHARACTER_ID = os.getenv("STS2_AUTOPLAY_CHARACTER", "RANDOM_CHARACTER").strip().upper()
 
 
+class ReadOnlyCardSelection(RuntimeError):
+    pass
+
+
 def configure_stdio() -> None:
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     for stream in (getattr(sys, "stdout", None), getattr(sys, "stderr", None)):
@@ -6689,6 +6693,43 @@ def selection_context_blob(selection: "dict[str, Any]", agent_selection: "dict[s
     return " ".join(parts).lower()
 
 
+def selection_number(selection: "dict[str, Any]", agent_selection: "dict[str, Any]", key: "str") -> "int | None":
+    for source in (selection, agent_selection):
+        if not isinstance(source, dict):
+            continue
+        number = first_number(source.get(key))
+        if number is not None:
+            return number
+    return None
+
+
+def readonly_card_selection_reason(state: "dict[str, Any]") -> "str | None":
+    if state.get("screen") != "CARD_SELECTION":
+        return None
+    selection = state.get("selection") or {}
+    agent_selection = (state.get("agent_view") or {}).get("selection") or {}
+    max_pick = selection_number(selection, agent_selection, "max")
+    min_pick = selection_number(selection, agent_selection, "min")
+    if max_pick != 0 or min_pick not in (None, 0):
+        return None
+    if "confirm_selection" in as_actions(state):
+        return None
+    context_blob = selection_context_blob(selection, agent_selection)
+    readonly_prompt = any(token in context_blob for token in (
+        "draw pile",
+        "discard pile",
+        "will be shuffled",
+        "shuffled into",
+        "抽牌堆耗尽",
+        "洗入抽牌堆",
+        "抽牌堆",
+        "弃牌堆",
+    ))
+    if readonly_prompt:
+        return "read-only card pile view"
+    return None
+
+
 def selection_cards_match_deck(selection_cards: "list[dict[str, Any]]", deck: "list[dict[str, Any]]") -> "bool":
     if not selection_cards or not deck:
         return False
@@ -7040,6 +7081,9 @@ class Autoplayer:
             self.unknown_waits = 0
             try:
                 self.step(state, actions)
+            except ReadOnlyCardSelection as exc:
+                log(f"readonly card selection blocked: {exc}", compact_state(state))
+                return {'status':"readonly_card_selection",  'steps':self.steps,  'state':state}
             except Sts2ApiError as exc:
                 try:
                     log(f"api error {exc}", compact_state(state))
@@ -7098,6 +7142,9 @@ class Autoplayer:
                 self.act("choose_reward_card", "pick best reward card", option_index=(idx or 0))
             return
         if "select_deck_card" in actions:
+            readonly_reason = readonly_card_selection_reason(state)
+            if readonly_reason:
+                raise ReadOnlyCardSelection(readonly_reason)
             selection = state.get("selection") or {}
             run = state.get("run") or {}
             cards = selection.get("cards") if isinstance(selection.get("cards"), list) else []
@@ -7252,6 +7299,9 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
         self.act("confirm_selection", "confirm completed selection")
         return
     if "select_deck_card" in actions:
+        readonly_reason = readonly_card_selection_reason(state)
+        if readonly_reason:
+            raise ReadOnlyCardSelection(readonly_reason)
         selection = state.get("selection") or {}
         run = state.get("run") or {}
         cards = selection.get("cards") if isinstance(selection.get("cards"), list) else []

@@ -863,6 +863,46 @@ def main() -> int:
     }
     assert ai.choose_deck_selection_index(silent_no_pressure_discard_state) == 1
 
+    readonly_pile_selection_state = {
+        "screen": "CARD_SELECTION",
+        "in_combat": True,
+        "available_actions": ["select_deck_card", "discard_potion"],
+        "selection": {},
+        "agent_view": {
+            "selection": {
+                "kind": "deck_card_select",
+                "prompt": "When the draw pile is empty, these cards will be shuffled into the draw pile.",
+                "min": 0,
+                "max": 0,
+                "selected": 0,
+                "confirm": False,
+                "cards": [
+                    {"i": 0, "line": "Strike [1]: Deal 6 damage."},
+                    {"i": 1, "line": "Defend [1]: Gain 5 Block."},
+                ],
+            }
+        },
+        "combat": {
+            "hand": [],
+            "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 30, "intent": "Attack 6"}],
+        },
+        "run": {"character_id": "SILENT", "current_hp": 42, "max_hp": 70, "deck": []},
+    }
+    assert ai.readonly_card_selection_reason(readonly_pile_selection_state) == "read-only card pile view"
+
+    real_optional_selection_state = {
+        **readonly_pile_selection_state,
+        "available_actions": ["select_deck_card", "confirm_selection"],
+        "agent_view": {
+            "selection": {
+                **readonly_pile_selection_state["agent_view"]["selection"],
+                "prompt": "Choose cards to discard.",
+                "max": 1,
+            }
+        },
+    }
+    assert ai.readonly_card_selection_reason(real_optional_selection_state) is None
+
     silent_discard_resource_state = {
         **silent_low_block_discard_state,
         "selection": {

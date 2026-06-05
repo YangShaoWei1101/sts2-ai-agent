@@ -188,6 +188,22 @@ STATUS_BAGGAGE_IDS = {
  'SLIMED', 
  'VOID', 
  'WOUND'}
+BASIC_STRIKE_IDS = frozenset({
+    "STRIKE",
+    "STRIKE_IRONCLAD",
+    "STRIKE_SILENT",
+    "STRIKE_DEFECT",
+    "STRIKE_NECROBINDER",
+    "STRIKE_REGENT",
+})
+BASIC_DEFEND_IDS = frozenset({
+    "DEFEND",
+    "DEFEND_IRONCLAD",
+    "DEFEND_SILENT",
+    "DEFEND_DEFECT",
+    "DEFEND_NECROBINDER",
+    "DEFEND_REGENT",
+})
 REWARD_UTILITY_ROLES = {
  'draw', 
  'energy', 
@@ -2449,25 +2465,72 @@ def discard_selection_score(card: "dict[str, Any]", state: "dict[str, Any]") -> 
     return score
 
 
+def starter_card_counts(plan: "Any") -> "tuple[int, int]":
+    strikes = sum(int(plan.ids.get(card_id, 0) or 0) for card_id in BASIC_STRIKE_IDS)
+    defends = sum(int(plan.ids.get(card_id, 0) or 0) for card_id in BASIC_DEFEND_IDS)
+    return strikes, defends
+
+
+def low_value_block_remove_candidate(card: "dict[str, Any]", plan: "Any") -> "bool":
+    roles = known_card_roles(card)
+    cid = normalized_card_id(card)
+    block = estimate_card_block(card)
+    if cid in BASIC_DEFEND_IDS:
+        return block <= 6
+    if block <= 0 or block > 6:
+        return False
+    if roles & {"draw", "energy", "star_resource", "power_scaling", "debuff", "weak", "vulnerable", "dexterity", "block_retention"}:
+        return False
+    known = CARD_KNOWLEDGE.lookup(card)
+    if known is not None and plan.wants_archetype(known):
+        return False
+    rarity = str(card.get("rarity") or "").lower()
+    return rarity in {"", "basic", "common"}
+
+
 def remove_selection_score(card: "dict[str, Any]", state: "dict[str, Any]") -> "float":
     cid = normalized_card_id(card)
     roles = known_card_roles(card)
     card_type = known_card_type(card)
     rarity = str(card.get("rarity") or "").lower()
     plan = deck_plan(state)
+    strike_count, defend_count = starter_card_counts(plan)
+    starter_strike = cid in BASIC_STRIKE_IDS
+    starter_defend = cid in BASIC_DEFEND_IDS
+    low_value_block = low_value_block_remove_candidate(card, plan)
     score = 0.0
     if card.get("selected") or card.get("is_selected") or card.get("chosen") or card.get("disabled"):
         return -999.0
     if card_type in frozenset({'curse', 'status', 'quest'}) or "curse" in rarity or "not_for_drafting" in roles:
         score += 260
-    if cid in frozenset({'STRIKE', 'STRIKE_IRONCLAD', 'STRIKE_SILENT', 'STRIKE_DEFECT', 'STRIKE_NECROBINDER', 'STRIKE_REGENT'}):
-        score += 130
+    if starter_strike:
+        score += 120
         if plan.needs_damage:
-            score -= 25
-    if cid in frozenset({'DEFEND', 'DEFEND_IRONCLAD', 'DEFEND_SILENT', 'DEFEND_DEFECT', 'DEFEND_NECROBINDER', 'DEFEND_REGENT'}):
-        score += 115
+            score -= 52
+        if strike_count <= 2 and plan.needs_damage:
+            score -= 24
+        if not plan.needs_damage and strike_count >= 4:
+            score += 10
+    if starter_defend:
+        score += 112
         if plan.needs_block:
-            score -= 30
+            score -= 54
+        if not plan.needs_block and defend_count >= 4:
+            score += 30
+        if defend_count >= strike_count and not plan.needs_block:
+            score += 12
+    elif low_value_block:
+        score += 78
+        if plan.needs_block:
+            score -= 36
+        elif plan.block_count >= 7:
+            score += 20
+    if low_value_block and not plan.needs_block:
+        score += 10
+        if plan.character_id == "SILENT" and (plan.attack_count >= 6 or not plan.needs_damage):
+            score += 18
+    if starter_strike and plan.character_id == "SILENT" and not plan.needs_damage and plan.needs_block:
+        score += 14
     if card.get("playable") is False:
         score += 70
     if plan.wants_removal:

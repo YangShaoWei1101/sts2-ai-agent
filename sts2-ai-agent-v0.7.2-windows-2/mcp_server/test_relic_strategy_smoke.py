@@ -978,6 +978,67 @@ def main() -> int:
     shop_action, _, reason = ai.choose_shop_action(silent_boss_prep_remove_over_fire_potion_state)
     assert shop_action == "remove_card_at_shop", reason
 
+    silent_remove_low_block_state = {
+        "screen": "CARD_SELECTION",
+        "selection": {
+            "type": "remove",
+            "cards": [
+                {"index": 0, "id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1, "damage": 6},
+                {"index": 1, "id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5},
+                {"index": 2, "id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                {"index": 3, "id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 7,
+            "current_hp": 54,
+            "max_hp": 70,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1, "damage": 6} for _ in range(3)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5} for _ in range(5)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                    {"id": "DAGGER_THROW", "name": "Dagger Throw", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 9},
+                    {"id": "DASH", "name": "Dash", "type": "Attack", "rarity": "Uncommon", "cost": 2, "damage": 10, "block": 10},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "BACKFLIP", "name": "Backflip", "type": "Skill", "rarity": "Common", "cost": 1, "block": 5, "description": "Gain 5 Block. Draw 2 cards."},
+                ]
+            ),
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    assert ai.choose_deck_selection_index(silent_remove_low_block_state) == 1
+    assert ai.remove_selection_score(
+        silent_remove_low_block_state["selection"]["cards"][1],
+        silent_remove_low_block_state,
+    ) > ai.remove_selection_score(
+        silent_remove_low_block_state["selection"]["cards"][0],
+        silent_remove_low_block_state,
+    )
+
+    silent_block_starved_remove_state = {
+        **silent_remove_low_block_state,
+        "run": {
+            **silent_remove_low_block_state["run"],
+            "floor": 8,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1, "damage": 6} for _ in range(5)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5} for _ in range(2)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                    {"id": "DAGGER_THROW", "name": "Dagger Throw", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 9},
+                    {"id": "DAGGER_SPRAY", "name": "Dagger Spray", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 4},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                ]
+            ),
+        },
+    }
+    assert ai.deck_plan(silent_block_starved_remove_state).needs_block
+    assert ai.choose_deck_selection_index(silent_block_starved_remove_state) == 0
+
     low_hp_survival_potion_shop_state = {
         "screen": "SHOP",
         "available_actions": ["buy_card", "buy_potion", "close_shop_inventory"],

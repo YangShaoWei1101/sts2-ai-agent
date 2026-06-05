@@ -2027,6 +2027,57 @@ def main() -> int:
         silent_boss_damage_starved_state,
     )
 
+    silent_needs_cycle_state = {
+        "run": {
+            "character_id": "SILENT",
+            "floor": 15,
+            "current_hp": 31,
+            "max_hp": 70,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(3)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0, "upgraded": True},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "upgraded": True},
+                    {"id": "CLOAK_AND_DAGGER", "name": "Cloak and Dagger", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "EXPOSE", "name": "Expose", "type": "Skill", "rarity": "Uncommon", "cost": 0},
+                    {"id": "BLUR", "name": "Blur", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "PREDATOR", "name": "Predator", "type": "Attack", "rarity": "Uncommon", "cost": 2},
+                    {"id": "MEMENTO_MORI", "name": "Memento Mori", "type": "Attack", "rarity": "Rare", "cost": 1},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "SUCKER_PUNCH", "name": "Sucker Punch", "type": "Attack", "rarity": "Common", "cost": 1},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "ORICHALCUM", "name": "Orichalcum"},
+            ],
+        }
+    }
+    cycle_plan = ai.deck_plan(silent_needs_cycle_state)
+    assert cycle_plan.needs_draw, cycle_plan.summary()
+    calculated_gamble_reward = {
+        "id": "CALCULATED_GAMBLE",
+        "name": "Calculated Gamble",
+        "type": "Skill",
+        "rarity": "Uncommon",
+        "cost": 0,
+        "description": "Discard your hand, then draw that many cards.",
+    }
+    duplicate_expose_reward = {
+        "id": "EXPOSE",
+        "name": "Expose",
+        "type": "Skill",
+        "rarity": "Uncommon",
+        "cost": 0,
+        "description": "Remove all Artifact and Block from the enemy. Apply 2 Vulnerable.",
+    }
+    assert "draw" in ai.known_card_roles(calculated_gamble_reward)
+    assert ai.score_reward_card(calculated_gamble_reward, silent_needs_cycle_state) > ai.score_reward_card(
+        duplicate_expose_reward,
+        silent_needs_cycle_state,
+    )
+
     pressure_anticipate_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

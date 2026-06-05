@@ -5238,6 +5238,28 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
         else:
             score += min(18.0, outlet_count * 3.0 + premium_outlets * 4.0)
             reasons.append("supported-discard-resource")
+    if character_id == "SILENT" and cid_norm == "CALCULATED_GAMBLE":
+        cycle_bonus = 16.0
+        if plan.needs_draw:
+            cycle_bonus += 32.0
+        if plan.card_count >= 15:
+            cycle_bonus += 12.0
+        if plan.basic_count >= 8 or plan.wants_removal:
+            cycle_bonus += 14.0
+        if boss_prep:
+            cycle_bonus += 8.0
+        if plan.ids.get("CALCULATED_GAMBLE", 0):
+            cycle_bonus -= 22.0
+        score += max(8.0, cycle_bonus)
+        reasons.append(f"silent-discard-cycle={cycle_bonus:.0f}")
+    if character_id == "SILENT" and cid_norm == "EXPOSE" and plan.ids.get("EXPOSE", 0):
+        expose_penalty = 18.0 + min(28.0, int(plan.ids.get("EXPOSE", 0) or 0) * 14.0)
+        if plan.needs_draw:
+            expose_penalty += 14.0
+        if not plan.needs_damage:
+            expose_penalty += 8.0
+        score -= expose_penalty
+        reasons.append(f"duplicate-expose={expose_penalty:.0f}")
     boss_survival_pressure = boss_prep and (
         hp_ratio < 0.78
         or plan.block_count < 8

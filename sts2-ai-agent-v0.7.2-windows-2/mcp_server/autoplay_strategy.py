@@ -206,6 +206,7 @@ def _text_draws_cards(text: str) -> bool:
     return bool(
         re.search(r"\bdraw\s+(?:\d+|a|one|two|three|four|all)?\s*cards?\b", text)
         or re.search(r"\bdraw\s+cards?\b", text)
+        or "draw that many cards" in text
         or "抽牌" in text
         or re.search(r"抽(?:\d+)?\s*张?牌", text)
     )
@@ -315,6 +316,10 @@ def load_card_model() -> dict[str, KnownCard]:
             roles.discard("self_damage")
             roles.add("debuff")
             roles.add("strength")
+        if card_id == "CALCULATED_GAMBLE":
+            roles.add("draw")
+            roles.add("discard")
+            roles.add("deck_manipulation")
         if card_id == "FOOTWORK":
             roles.add("block")
             roles.add("dexterity")

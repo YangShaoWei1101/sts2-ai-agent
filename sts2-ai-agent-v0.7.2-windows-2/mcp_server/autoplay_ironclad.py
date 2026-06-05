@@ -1273,7 +1273,7 @@ def enemy_damage_after_card(card, target, enemies, state=None):
             if idx == target:
                 if attack_damage >= enemy_hp(enemy):
                     continue
-        damage = intent_damage(enemy)
+        damage = enemy_pressure_damage(enemy)
         if weakens:
             if target is not None:
                 if idx == target and damage:
@@ -1527,10 +1527,59 @@ def enemy_summon_pressure(enemy: "dict[str, Any]") -> "int":
     return 0
 
 
+def enemy_move_pressure(enemy: "dict[str, Any]") -> "tuple[int, float]":
+    enemy_id = str(enemy.get("enemy_id") or enemy.get("id") or "").lower()
+    blob = text_blob(
+        {
+            "enemy_id": enemy.get("enemy_id") or enemy.get("id"),
+            "intent": enemy.get("intent"),
+            "intent_name": enemy.get("intent_name"),
+            "move_id": enemy.get("move_id"),
+            "raw": enemy,
+        }
+    )
+    damage_hint = 0
+    utility = 0.0
+    if "quick_slash" in blob:
+        damage_hint = max(damage_hint, 14)
+        utility += 4
+    if "boomerang" in blob:
+        damage_hint = max(damage_hint, 16)
+        utility += 4
+    if "claw_move" in blob:
+        damage_hint = max(damage_hint, 12)
+    if "rip_and_tear" in blob:
+        damage_hint = max(damage_hint, 18)
+    if "power_dance" in blob:
+        utility += 20
+    if "ritual" in blob:
+        utility += 18
+    if "orb_of_frailty" in blob or "frailty" in blob:
+        utility += 14
+    if any(token in blob for token in ("debuff", "vulnerable", "weak", "frail")):
+        utility += 8
+    if any(token in blob for token in ("buff", "strength", "power")):
+        utility += 8
+    if any(token in blob for token in ("heal", "regenerate")):
+        utility += 10
+    if enemy_summon_pressure(enemy):
+        utility += 18
+    if "kin_follower" in enemy_id and not damage_hint:
+        utility += 8
+    return damage_hint, utility
+
+
+def enemy_pressure_damage(enemy: "dict[str, Any]") -> "int":
+    move_damage, _ = enemy_move_pressure(enemy)
+    return max(intent_damage(enemy), move_damage)
+
+
 def enemy_threat_score(enemy: "dict[str, Any]") -> "float":
     enemy_id = str(enemy.get("enemy_id") or enemy.get("id") or "").upper()
     blob = text_blob(enemy)
-    score = float(intent_damage(enemy) * 2)
+    _, move_utility = enemy_move_pressure(enemy)
+    score = float(enemy_pressure_damage(enemy) * 2)
+    score += move_utility
     score += enemy_power_amount(enemy, "STRENGTH_POWER", "STRENGTH") * 3.0
     score += enemy_status_pressure(enemy) * 5.0
     if any((token in enemy_id for token in ('KIN_FOLLOWER', 'CULTIST', 'HEALER', 'PRIEST'))):
@@ -1557,19 +1606,24 @@ def enemy_target_score(enemy, enemies, *, damage, lethal):
     has_real_enemy = any((not enemy_is_minion(candidate) for candidate in alive))
     is_minion = enemy_is_minion(enemy)
     status_pressure = enemy_status_pressure(enemy)
-    damage_pressure = intent_damage(enemy)
+    _, move_utility = enemy_move_pressure(enemy)
+    damage_pressure = enemy_pressure_damage(enemy)
     if is_minion and has_real_enemy:
-        score -= 24
+        score -= max(0, 18 - min(16, damage_pressure + int(move_utility // 2)))
         if lethal:
-            if damage_pressure + status_pressure * 3 >= 10:
-                score += 18
-        if damage_pressure >= 12:
+            if damage_pressure + status_pressure * 3 + int(move_utility) >= 8:
+                score += 28
+        if damage_pressure >= 8:
             score += 12
+        if move_utility >= 10:
+            score += 8
+        if damage >= max(1, enemy_hp(enemy) // 2) and (damage_pressure or move_utility):
+            score += 6
     else:
         if status_pressure >= 3:
             score += 8
         else:
-            if minion_count:
+            if minion_count and enemy_summon_pressure(enemy):
                 score += 12 + minion_count * 4
                 if enemy_summon_pressure(enemy):
                     score += 20
@@ -2088,7 +2142,7 @@ def card_setup_value(card: "dict[str, Any]", state: "dict[str, Any]", cards: "li
     block = estimate_card_block(card) + attack_relic_block(card, state)
     combat = state.get("combat") or {}
     enemies = combat.get("enemies") or []
-    incoming = sum((intent_damage(enemy) for enemy in enemies if enemy_alive(enemy)))
+    incoming = sum((enemy_pressure_damage(enemy) for enemy in enemies if enemy_alive(enemy)))
     current_block = first_number(current_player(state).get("block")) or first_number(combat.get("block")) or 0
     energy_after_card = max(0, player_energy(state) - cost + card_energy_gain(card, state))
     stars = player_stars(state)
@@ -2342,7 +2396,7 @@ def discard_candidate_pool(state: "dict[str, Any]") -> "list[dict[str, Any]]":
 def remaining_turn_value_after_discard(cards: "list[dict[str, Any]]", state: "dict[str, Any]") -> "float":
     combat = state.get("combat") or {}
     enemies = combat.get("enemies") or []
-    incoming = sum((intent_damage(enemy) for enemy in enemies if enemy_alive(enemy)))
+    incoming = sum((enemy_pressure_damage(enemy) for enemy in enemies if enemy_alive(enemy)))
     current_block = first_number(current_player(state).get("block")) or first_number(combat.get("block")) or 0
     need = max(0, incoming - current_block)
     hp, max_hp = player_hp(state)
@@ -2425,7 +2479,7 @@ def discard_selection_score(card: "dict[str, Any]", state: "dict[str, Any]") -> 
     combat = state.get("combat") or {}
     hand = combat.get("hand") or []
     enemies = combat.get("enemies") or []
-    incoming = sum((intent_damage(enemy) for enemy in enemies if enemy_alive(enemy)))
+    incoming = sum((enemy_pressure_damage(enemy) for enemy in enemies if enemy_alive(enemy)))
     current_block = first_number(current_player(state).get("block")) or first_number(combat.get("block")) or 0
     energy = player_energy(state)
     hp, max_hp = player_hp(state)
@@ -2473,11 +2527,23 @@ def discard_selection_score(card: "dict[str, Any]", state: "dict[str, Any]") -> 
         score += 240
     if not current_turn_playable:
         score += 28
+    critical_pressure = bool(
+        need > 0
+        and (
+            hp_ratio < 0.30
+            or hp is not None and need >= max(1, hp)
+            or need >= 20
+        )
+    )
     survival_roles = {"block_retention", "weak", "debuff", "strength", "dexterity"}
     if current_turn_playable and roles & survival_roles:
         score -= 10
         if incoming > current_block:
             score -= min(26, 6 + (incoming - current_block) * 1.0)
+        if critical_pressure:
+            score -= 90
+    if current_turn_playable and block > 0 and critical_pressure:
+        score -= min(220, 80 + block * 8 + need * (3.0 if hp_ratio < 0.45 else 1.5))
     if starter_attack:
         score += 10 if incoming <= current_block else 4
     if starter_block:
@@ -4467,7 +4533,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         return (
          "end_turn", {}, "no playable cards")
 
-    incoming = sum((intent_damage(e) for e in enemies if enemy_alive(e)))
+    incoming = sum((enemy_pressure_damage(e) for e in enemies if enemy_alive(e)))
     player = current_player(state)
     current_block = first_number(player.get("block")) or first_number(combat.get("block")) or 0
     hp, max_hp = player_hp(state)
@@ -4558,7 +4624,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
                     if dmg >= enemy_hp(enemy):
                         aoe_kills += 1
                         target_score = enemy_target_score(enemy, enemies, damage=dmg, lethal=True)
-                        score += 30 + target_score * 0.65 + intent_damage(enemy) * 2.0
+                        score += 30 + target_score * 0.65 + enemy_pressure_damage(enemy) * 2.0
                 if aoe_kills:
                     reasons.append(f"aoe-lethal={aoe_kills}")
             if target is not None and 0 <= target < len(enemies):

@@ -863,6 +863,111 @@ def main() -> int:
     }
     assert ai.choose_deck_selection_index(silent_no_pressure_discard_state) == 1
 
+    critical_survival_discard_state = {
+        **silent_low_block_discard_state,
+        "selection": {
+            **silent_low_block_discard_state["selection"],
+            "cards": [
+                {
+                    "index": 0,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 1,
+                    "id": "SHADOWMELD",
+                    "name": "Shadowmeld",
+                    "type": "Skill",
+                    "rarity": "Common",
+                    "cost": 1,
+                    "block": 3,
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 2,
+                    "id": "SURVIVOR",
+                    "name": "Survivor",
+                    "type": "Skill",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "block": 8,
+                    "description": "Gain 8 Block. Discard 1 card.",
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 3,
+                    "id": "SUCKER_PUNCH",
+                    "name": "Sucker Punch",
+                    "type": "Attack",
+                    "rarity": "Common",
+                    "cost": 1,
+                    "damage": 8,
+                    "playable": True,
+                    "requires_target": True,
+                },
+                {
+                    "index": 4,
+                    "id": "PREDATOR",
+                    "name": "Predator",
+                    "type": "Attack",
+                    "rarity": "Uncommon",
+                    "cost": 2,
+                    "damage": 15,
+                    "playable": True,
+                    "requires_target": True,
+                },
+                {
+                    "index": 5,
+                    "id": "PIERCING_WAIL",
+                    "name": "Piercing Wail+",
+                    "type": "Skill",
+                    "rarity": "Common",
+                    "cost": 1,
+                    "description": "ALL enemies lose 8 Strength this turn. Exhaust.",
+                    "playable": True,
+                    "requires_target": False,
+                },
+            ],
+        },
+        "combat": {
+            "energy": 3,
+            "player": {"block": 0},
+            "hand": [],
+            "enemies": [
+                {
+                    "index": 0,
+                    "id": "MAWLER",
+                    "hp": 37,
+                    "intent": "RIP_AND_TEAR_MOVE",
+                }
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 3,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    assert ai.enemy_pressure_damage(critical_survival_discard_state["combat"]["enemies"][0]) >= 18
+    assert ai.discard_selection_score(
+        critical_survival_discard_state["selection"]["cards"][3],
+        critical_survival_discard_state,
+    ) > ai.discard_selection_score(
+        critical_survival_discard_state["selection"]["cards"][0],
+        critical_survival_discard_state,
+    )
+    assert ai.choose_deck_selection_index(critical_survival_discard_state) in {3, 4}
+
     readonly_pile_selection_state = {
         "screen": "CARD_SELECTION",
         "in_combat": True,
@@ -1839,6 +1944,42 @@ def main() -> int:
     combat_action, kwargs, reason = ai.choose_combat_action(reindexed_enemy_target_state)
     assert combat_action == "play_card", reason
     assert kwargs["target_index"] == 2, reason
+
+    dangerous_kin_target_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 1,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": True,
+                }
+            ],
+            "enemies": [
+                {"index": 0, "id": "KIN_FOLLOWER", "hp": 28, "intent": "QUICK_SLASH_MOVE"},
+                {"index": 1, "id": "KIN_PRIEST", "hp": 155, "intent": "RITUAL_MOVE"},
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 34,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    assert ai.choose_enemy_for_damage(dangerous_kin_target_state["combat"]["enemies"], 6) == 0
+    combat_action, kwargs, reason = ai.choose_combat_action(dangerous_kin_target_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["target_index"] == 0, reason
 
     regent_no_pressure_block_state = {
         "screen": "COMBAT",

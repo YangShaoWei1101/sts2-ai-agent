@@ -4914,6 +4914,9 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     best_would_die = hp is not None and hp - best_preventable_gap <= 0
     best_incoming_reduced_by = max(0, incoming - best_post_incoming)
     best_is_turn_strength_debuff = card_is_turn_strength_debuff(card)
+    best_id = normalized_card_id(card)
+    best_tactical_discard = discard_play_has_tactical_value(card, state)
+    best_other_hand_cards = [other for other in cards if not same_card_instance(other, card)]
     best_nonblock_immediate_value = bool(
         best_damage > 0
         or best_generated_damage > 0
@@ -5033,6 +5036,18 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     if passive_block and best_block > 0 and best_block <= passive_block and not best_nonblock_immediate_value:
         return (
          "end_turn", {}, f"orichalcum better than weak block score={best_score:.1f}")
+    if (
+        best_id == "CALCULATED_GAMBLE"
+        and energy <= 0
+        and not best_tactical_discard
+        and (
+            not best_other_hand_cards
+            or incoming <= baseline_block
+            or best_score <= 0
+        )
+    ):
+        return (
+         "end_turn", {}, f"save hand cycle for useful window score={best_score:.1f}")
     if (
         best_setup_only_spend
         and best_score <= damage_floor

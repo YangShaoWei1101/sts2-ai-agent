@@ -2078,6 +2078,49 @@ def main() -> int:
         silent_needs_cycle_state,
     )
 
+    covered_calculated_gamble_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 0,
+            "player": {"block": 13},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "CALCULATED_GAMBLE",
+                    "name": "Calculated Gamble",
+                    "type": "Skill",
+                    "rarity": "Uncommon",
+                    "cost": 0,
+                    "description": "Discard your hand, then draw that many cards. Exhaust.",
+                    "playable": True,
+                    "requires_target": False,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 80, "intent": "Attack 13"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 45,
+            "max_hp": 70,
+            "deck": silent_needs_cycle_state["run"]["deck"],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    combat_action, _, reason = ai.choose_combat_action(covered_calculated_gamble_state)
+    assert combat_action == "end_turn", reason
+
+    empty_cycle_calculated_gamble_state = {
+        **covered_calculated_gamble_state,
+        "combat": {
+            **covered_calculated_gamble_state["combat"],
+            "player": {"block": 0},
+            "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 80, "intent": "Attack 12"}],
+        },
+    }
+    combat_action, _, reason = ai.choose_combat_action(empty_cycle_calculated_gamble_state)
+    assert combat_action == "end_turn", reason
+
     pressure_anticipate_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

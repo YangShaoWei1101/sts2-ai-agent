@@ -960,13 +960,77 @@ def main() -> int:
     }
     assert ai.enemy_pressure_damage(critical_survival_discard_state["combat"]["enemies"][0]) >= 18
     assert ai.discard_selection_score(
-        critical_survival_discard_state["selection"]["cards"][3],
+        critical_survival_discard_state["selection"]["cards"][4],
         critical_survival_discard_state,
     ) > ai.discard_selection_score(
         critical_survival_discard_state["selection"]["cards"][0],
         critical_survival_discard_state,
     )
-    assert ai.choose_deck_selection_index(critical_survival_discard_state) in {3, 4}
+    assert ai.discard_selection_score(
+        critical_survival_discard_state["selection"]["cards"][4],
+        critical_survival_discard_state,
+    ) > ai.discard_selection_score(
+        critical_survival_discard_state["selection"]["cards"][5],
+        critical_survival_discard_state,
+    )
+    assert ai.choose_deck_selection_index(critical_survival_discard_state) == 4
+
+    waterfall_ram_enemy = {"index": 0, "id": "WATERFALL_GIANT", "hp": 74, "intent": "RAM_MOVE"}
+    waterfall_pressure_enemy = {"index": 0, "id": "WATERFALL_GIANT", "hp": 73, "intent": "PRESSURE_GUN_MOVE"}
+    assert ai.enemy_pressure_damage(waterfall_ram_enemy) >= 10
+    assert ai.enemy_pressure_damage(waterfall_pressure_enemy) >= 25
+
+    ram_keep_free_weak_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["select_deck_card"],
+        "selection": {
+            "prompt": "Choose a card to discard.",
+            "cards": [
+                {
+                    "index": 0,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 1,
+                    "id": "NEUTRALIZE",
+                    "name": "Neutralize",
+                    "type": "Attack",
+                    "rarity": "Basic",
+                    "cost": 0,
+                    "playable": True,
+                    "requires_target": True,
+                },
+            ],
+        },
+        "combat": {
+            "energy": 1,
+            "player": {"block": 8},
+            "hand": [],
+            "enemies": [waterfall_ram_enemy],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 8,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    assert ai.discard_selection_score(
+        ram_keep_free_weak_state["selection"]["cards"][0],
+        ram_keep_free_weak_state,
+    ) > ai.discard_selection_score(
+        ram_keep_free_weak_state["selection"]["cards"][1],
+        ram_keep_free_weak_state,
+    )
+    assert ai.choose_deck_selection_index(ram_keep_free_weak_state) == 0
 
     readonly_pile_selection_state = {
         "screen": "CARD_SELECTION",
@@ -1121,6 +1185,79 @@ def main() -> int:
         },
     }
     shop_action, _, reason = ai.choose_shop_action(silent_boss_prep_remove_over_fire_potion_state)
+    assert shop_action == "remove_card_at_shop", reason
+
+    silent_boss_dirty_shop_preserve_removal_state = {
+        "screen": "SHOP",
+        "available_actions": ["buy_card", "remove_card_at_shop", "close_shop_inventory"],
+        "run": {
+            "character_id": "SILENT",
+            "floor": 13,
+            "current_hp": 32,
+            "max_hp": 70,
+            "gold": 83,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5} for _ in range(4)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize+", "type": "Attack", "rarity": "Basic", "cost": 0, "upgraded": True},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                    {"id": "SUCKER_PUNCH", "name": "Sucker Punch", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 8},
+                    {"id": "FLECHETTES", "name": "Flechettes", "type": "Attack", "rarity": "Uncommon", "cost": 1, "damage": 5},
+                    {"id": "SUCKER_PUNCH", "name": "Sucker Punch", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 8},
+                    {"id": "SPOILS_MAP", "name": "Spoils Map", "type": "Quest", "rarity": "Quest", "cost": -1},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "SKEWER", "name": "Skewer", "type": "Attack", "rarity": "Uncommon", "cost": 0, "damage": 7},
+                    {"id": "BLUR", "name": "Blur", "type": "Skill", "rarity": "Uncommon", "cost": 1, "block": 5},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "LOST_COFFER", "name": "Lost Coffer"},
+                {"id": "SWORD_OF_STONE", "name": "Sword of Stone"},
+                {"id": "CANDELABRA", "name": "Candelabra"},
+            ],
+            "potions": [
+                {"id": "VULNERABLE_POTION", "name": "Vulnerable Potion", "occupied": True},
+                {"id": "DROPLET_OF_PRECOGNITION", "name": "Droplet of Precognition", "occupied": True},
+                {"id": "ATTACK_POTION", "name": "Attack Potion", "occupied": True},
+            ],
+        },
+        "shop": {
+            "remove_cost": 75,
+            "items": [
+                {
+                    "index": 2,
+                    "price": 26,
+                    "card": {
+                        "id": "DODGE_AND_ROLL",
+                        "name": "Dodge and Roll",
+                        "type": "Skill",
+                        "rarity": "Common",
+                        "cost": 1,
+                        "block": 4,
+                    },
+                    "name": "Dodge and Roll",
+                    "type": "Card",
+                },
+                {
+                    "index": 1,
+                    "price": 49,
+                    "card": {
+                        "id": "FLICK_FLACK",
+                        "name": "Flick Flack",
+                        "type": "Attack",
+                        "rarity": "Common",
+                        "cost": 1,
+                        "damage": 6,
+                    },
+                    "name": "Flick Flack",
+                    "type": "Card",
+                },
+            ],
+        },
+    }
+    shop_action, _, reason = ai.choose_shop_action(silent_boss_dirty_shop_preserve_removal_state)
     assert shop_action == "remove_card_at_shop", reason
 
     silent_post_remove_cheap_block_shop_state = {

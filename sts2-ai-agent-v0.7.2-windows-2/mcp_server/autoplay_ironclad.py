@@ -1550,6 +1550,13 @@ def enemy_move_pressure(enemy: "dict[str, Any]") -> "tuple[int, float]":
         damage_hint = max(damage_hint, 12)
     if "rip_and_tear" in blob:
         damage_hint = max(damage_hint, 18)
+    if "waterfall_giant" in enemy_id:
+        if "ram_move" in blob:
+            damage_hint = max(damage_hint, 10)
+        if "pressure_gun_move" in blob:
+            damage_hint = max(damage_hint, 25)
+        if "siphon_move" in blob:
+            utility += 10
     if "power_dance" in blob:
         utility += 20
     if "ritual" in blob:
@@ -2542,6 +2549,25 @@ def discard_selection_score(card: "dict[str, Any]", state: "dict[str, Any]") -> 
             score -= min(26, 6 + (incoming - current_block) * 1.0)
         if critical_pressure:
             score -= 90
+    if current_turn_playable and incoming > current_block and roles & {"weak", "debuff", "strength"}:
+        reduction_target = None
+        if card.get("requires_target") or dmg > 0:
+            reduction_target = choose_enemy_for_damage(enemies, max(1, dmg))
+            valid = valid_targets(card, enemies)
+            if reduction_target is None and valid:
+                reduction_target = valid[0]
+            elif reduction_target is not None and valid and reduction_target not in valid:
+                reduction_target = valid[0]
+        incoming_reduced_by = max(0, incoming - enemy_damage_after_card(card, reduction_target, enemies, state))
+        if incoming_reduced_by:
+            reduction_protection = 18.0 + incoming_reduced_by * (8.0 if critical_pressure else 4.0)
+            if cost <= 0:
+                reduction_protection += 28.0
+            if hp_ratio < 0.35:
+                reduction_protection += 24.0
+            if incoming_reduced_by >= max(1, need):
+                reduction_protection += 24.0
+            score -= min(150.0, reduction_protection)
     if current_turn_playable and block > 0 and critical_pressure:
         score -= min(220, 80 + block * 8 + need * (3.0 if hp_ratio < 0.45 else 1.5))
     if starter_attack:
@@ -4114,8 +4140,8 @@ def choose_potion_action(state: "dict[str, Any]", actions: "set[str]") -> "tuple
     hp, max_hp = player_hp(state)
     ratio = hp / max_hp if (hp and max_hp) else 1.0
     combat = state.get("combat") or {}
-    incoming = sum((intent_damage(e) for e in combat.get("enemies") or [] if enemy_alive(e)))
-    current_block = first_number((combat.get("player") or {}).get("block")) or 0
+    incoming = sum((enemy_pressure_damage(e) for e in combat.get("enemies") or [] if enemy_alive(e)))
+    current_block = first_number(current_player(state).get("block")) or first_number(combat.get("block")) or 0
     damage_gap = max(0, incoming - current_block)
     projected_hp = (hp or 999) - incoming
     projected_ratio = projected_hp / max_hp if max_hp else 1.0
@@ -6399,6 +6425,16 @@ def shop_boss_survival_can_block_removal(
     return False
 
 
+def shop_boss_survival_block_removal_threshold(state: "dict[str, Any]", removal_score: float) -> "float":
+    plan = deck_plan(state)
+    threshold = max(145.0, removal_score + 70.0)
+    if plan.curse_status_count or plan.removable_count >= 9:
+        threshold = max(threshold, 190.0)
+    if plan.needs_draw and plan.draw_count == 0:
+        threshold += 20.0
+    return threshold
+
+
 def choose_shop_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int], str]":
     actions = as_actions(state)
     if "open_shop_inventory" in actions:
@@ -6604,6 +6640,10 @@ def choose_shop_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int], s
             and core_buy_reasons
             and best[0] >= max(42.0, removal_score - 4.0)
             and shop_boss_survival_can_block_removal(best, state, removal_score, core_buy_reasons)
+            and (
+                shop_purchase_preserves_removal(best, gold, removal_cost)
+                or best[0] >= shop_boss_survival_block_removal_threshold(state, removal_score)
+            )
         )
         if boss_survival_buy and not shop_purchase_preserves_removal(best, gold, removal_cost):
             log(f"shop boss-survival-before-remove action={best[1]} idx={best[2]} score={best[0]:.1f} reasons={','.join(core_buy_reasons[:4])} plan={plan.summary()} relic={relic_summary(state)}", best[3])
@@ -6635,15 +6675,18 @@ def choose_shop_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int], s
     if removal_priority and "remove_card_at_shop" in actions and gold >= removal_cost:
         core_buy_reasons = shop_core_buy_reasons(best, state)
         would_block_removal = best[1] and not shop_purchase_preserves_removal(best, gold, removal_cost)
+        preserves_removal = shop_purchase_preserves_removal(best, gold, removal_cost)
+        blocks_removal_as_core = bool(
+            not preserves_removal
+            and shop_boss_survival_can_block_removal(best, state, removal_score, core_buy_reasons)
+            and best[0] >= shop_boss_survival_block_removal_threshold(state, removal_score)
+        )
         boss_core_buy = bool(
             boss_prep
             and best[1]
             and core_buy_reasons
             and best[0] >= max(42.0, removal_score - 4.0)
-            and (
-                shop_purchase_preserves_removal(best, gold, removal_cost)
-                or shop_boss_survival_can_block_removal(best, state, removal_score, core_buy_reasons)
-            )
+            and (preserves_removal or blocks_removal_as_core)
         )
         if (would_block_removal or not core_buy_reasons or best[0] < max(removal_score + 10.0, 42.0)) and not boss_core_buy:
             journal_decision("shop_remove", state, {'action':"remove_card_at_shop",
@@ -6747,8 +6790,8 @@ def choose_deck_selection_index(state: "dict[str, Any]", avoid: "set[int] | None
     discard_like = any((k in blob for k in ('discard', '弃牌')))
     remove_like = any((k in blob for k in ('remove', 'transform', 'lose', 'exhaust', '移除', '删除', '变换')))
     combat = state.get("combat") or {}
-    incoming = sum((intent_damage(e) for e in combat.get("enemies") or [] if enemy_alive(e)))
-    current_block = first_number((combat.get("player") or {}).get("block")) or 0
+    incoming = sum((enemy_pressure_damage(e) for e in combat.get("enemies") or [] if enemy_alive(e)))
+    current_block = first_number(current_player(state).get("block")) or first_number(combat.get("block")) or 0
     hp, max_hp = player_hp(state)
     hp_ratio = hp / max_hp if (hp and max_hp) else 1.0
 

@@ -4914,6 +4914,18 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     best_would_die = hp is not None and hp - best_preventable_gap <= 0
     best_incoming_reduced_by = max(0, incoming - best_post_incoming)
     best_is_turn_strength_debuff = card_is_turn_strength_debuff(card)
+    best_nonblock_immediate_value = bool(
+        best_damage > 0
+        or best_generated_damage > 0
+        or best_reduces_damage
+        or best_setup_score > 0
+        or card_draws_cards(card)
+        or card_energy_gain(card, state)
+        or card_star_gain(card)
+        or card_generates_combat_cards(card)
+        or card_grants_combat_resource(card)
+        or card_has_hand_end_damage(card)
+    )
     no_more_defense_to_buy = bool(
         best_damage > 0
         and best_block <= 0
@@ -5018,6 +5030,9 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     if passive_block and incoming <= baseline_block and best_is_pure_block and best_block <= passive_block:
         return (
          "end_turn", {}, f"orichalcum covers damage; skip weak block score={best_score:.1f}")
+    if passive_block and best_block > 0 and best_block <= passive_block and not best_nonblock_immediate_value:
+        return (
+         "end_turn", {}, f"orichalcum better than weak block score={best_score:.1f}")
     if (
         best_setup_only_spend
         and best_score <= damage_floor

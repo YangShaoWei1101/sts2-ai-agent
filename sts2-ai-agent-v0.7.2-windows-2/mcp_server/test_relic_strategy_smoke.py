@@ -1264,6 +1264,31 @@ def main() -> int:
     assert ai.passive_end_turn_block(orichalcum_state, 0) == 6
     assert combat_action == "end_turn", reason
 
+    orichalcum_partial_pressure_state = {
+        **orichalcum_state,
+        "combat": {
+            **orichalcum_state["combat"],
+            "energy": 1,
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "BLUR",
+                    "name": "Blur",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 3,
+                    "description": "Gain 3 Block. Block is not removed at the start of your next turn.",
+                    "playable": True,
+                    "requires_target": False,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 40, "intent": "Attack 11"}],
+        },
+        "run": {**orichalcum_state["run"], "character_id": "SILENT"},
+    }
+    combat_action, _, reason = ai.choose_combat_action(orichalcum_partial_pressure_state)
+    assert combat_action == "end_turn", reason
+
     no_pressure_block_state = {
         **orichalcum_state,
         "combat": {

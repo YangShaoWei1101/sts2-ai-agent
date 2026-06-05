@@ -42,6 +42,15 @@ STATUS_BAGGAGE_IDS = {
     "WOUND",
 }
 
+BASIC_CARD_ID_ALIASES = {
+    "STRIKE_R": "STRIKE_IRONCLAD",
+    "DEFEND_R": "DEFEND_IRONCLAD",
+    "STRIKE_G": "STRIKE_SILENT",
+    "DEFEND_G": "DEFEND_SILENT",
+    "STRIKE_B": "STRIKE_DEFECT",
+    "DEFEND_B": "DEFEND_DEFECT",
+}
+
 SILENT_REAL_DAMAGE_IDS = {
     "ACCURACY",
     "ACCELERANT",
@@ -175,10 +184,12 @@ def normalize_card_id(value: Any) -> str:
         return ""
     raw = raw.replace("-", "_").replace(" ", "_")
     if raw.upper() == raw:
-        return raw.upper()
-    raw = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", raw)
-    raw = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", raw)
-    return raw.upper()
+        normalized = raw.upper()
+    else:
+        raw = re.sub(r"(.)([A-Z][a-z]+)", r"\1_\2", raw)
+        raw = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", raw)
+        normalized = raw.upper()
+    return BASIC_CARD_ID_ALIASES.get(normalized, normalized)
 
 
 def card_id_from_payload(card: dict[str, Any] | None) -> str:

@@ -1018,6 +1018,41 @@ def main() -> int:
         silent_remove_low_block_state,
     )
 
+    silent_alias_remove_state = {
+        "screen": "CARD_SELECTION",
+        "selection": {
+            "context": "transform/remove a card",
+            "cards": [
+                {"index": 0, "id": "STRIKE_G", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1, "damage": 6},
+                {"index": 1, "id": "DEFEND_G", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5},
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 1,
+            "current_hp": 70,
+            "max_hp": 70,
+            "deck": (
+                [{"id": "STRIKE_G", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1, "damage": 6} for _ in range(5)]
+                + [{"id": "DEFEND_G", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5} for _ in range(5)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                ]
+            ),
+        },
+    }
+    assert ai.deck_plan(silent_alias_remove_state).character_id == "SILENT"
+    assert ai.deck_plan(silent_alias_remove_state).ids["STRIKE_SILENT"] == 5
+    assert ai.choose_deck_selection_index(silent_alias_remove_state) == 1
+    assert ai.remove_selection_score(
+        silent_alias_remove_state["selection"]["cards"][1],
+        silent_alias_remove_state,
+    ) > ai.remove_selection_score(
+        silent_alias_remove_state["selection"]["cards"][0],
+        silent_alias_remove_state,
+    )
+
     silent_block_starved_remove_state = {
         **silent_remove_low_block_state,
         "run": {

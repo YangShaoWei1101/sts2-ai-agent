@@ -190,6 +190,9 @@ STATUS_BAGGAGE_IDS = {
  'WOUND'}
 BASIC_STRIKE_IDS = frozenset({
     "STRIKE",
+    "STRIKE_R",
+    "STRIKE_G",
+    "STRIKE_B",
     "STRIKE_IRONCLAD",
     "STRIKE_SILENT",
     "STRIKE_DEFECT",
@@ -198,6 +201,9 @@ BASIC_STRIKE_IDS = frozenset({
 })
 BASIC_DEFEND_IDS = frozenset({
     "DEFEND",
+    "DEFEND_R",
+    "DEFEND_G",
+    "DEFEND_B",
     "DEFEND_IRONCLAD",
     "DEFEND_SILENT",
     "DEFEND_DEFECT",
@@ -6611,6 +6617,8 @@ def selection_context_blob(selection: "dict[str, Any]", agent_selection: "dict[s
             "label",
             "text",
             "description",
+            "context",
+            "context_text",
             "mode",
             "selection_mode",
             "selection_type",

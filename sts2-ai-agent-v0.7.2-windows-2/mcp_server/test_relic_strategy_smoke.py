@@ -1498,6 +1498,67 @@ def main() -> int:
     shop_action, _, reason = ai.choose_shop_action(silent_boss_dirty_shop_preserve_removal_state)
     assert shop_action == "remove_card_at_shop", reason
 
+    silent_late_no_aoe_shop_state = {
+        "screen": "SHOP",
+        "available_actions": ["buy_card", "close_shop_inventory"],
+        "run": {
+            "character_id": "SILENT",
+            "floor": 12,
+            "current_hp": 43,
+            "max_hp": 70,
+            "gold": 36,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5} for _ in range(4)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize+", "type": "Attack", "rarity": "Basic", "cost": 0, "upgraded": True},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                    {"id": "POUNCE", "name": "Pounce", "type": "Attack", "rarity": "Uncommon", "cost": 2, "damage": 12},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "DODGE_AND_ROLL", "name": "Dodge and Roll", "type": "Skill", "rarity": "Common", "cost": 1, "block": 4},
+                    {"id": "BACKFLIP", "name": "Backflip", "type": "Skill", "rarity": "Common", "cost": 1, "block": 5, "description": "Gain 5 Block. Draw 2 cards."},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "SPOILS_MAP", "name": "Spoils Map", "type": "Quest", "rarity": "Quest", "cost": -1},
+                    {"id": "DEADLY_POISON", "name": "Deadly Poison", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "BACKFLIP", "name": "Backflip", "type": "Skill", "rarity": "Common", "cost": 1, "block": 5, "description": "Gain 5 Block. Draw 2 cards."},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "POMANDER", "name": "Pomander"},
+                {"id": "FROZEN_EGG", "name": "Frozen Egg"},
+            ],
+            "potions": [
+                {"id": "ENERGY_POTION", "name": "Energy Potion", "occupied": True},
+                {"id": "FLEX_POTION", "name": "Flex Potion", "occupied": True},
+                {"id": None, "name": None, "occupied": False},
+            ],
+        },
+        "shop": {
+            "remove_cost": 75,
+            "items": [
+                {
+                    "index": 1,
+                    "price": 24,
+                    "card": {
+                        "id": "DAGGER_SPRAY",
+                        "name": "Dagger Spray",
+                        "type": "Attack",
+                        "rarity": "Common",
+                        "cost": 1,
+                        "damage": 4,
+                    },
+                    "name": "Dagger Spray",
+                    "type": "Card",
+                }
+            ],
+        },
+    }
+    assert ai.deck_plan(silent_late_no_aoe_shop_state).needs_aoe
+    shop_action, kwargs, reason = ai.choose_shop_action(silent_late_no_aoe_shop_state)
+    assert shop_action == "buy_card", reason
+    assert kwargs["option_index"] == 1
+
     silent_post_remove_cheap_block_shop_state = {
         "screen": "SHOP",
         "available_actions": ["buy_card", "close_shop_inventory"],
@@ -3169,6 +3230,56 @@ def main() -> int:
         },
     }
     assert ai.choose_claim_reward_index(only_low_value_card_claim_state) is None
+
+    critical_survival_card_claim_state = {
+        "screen": "REWARD",
+        "available_actions": ["claim_reward", "resolve_rewards", "collect_rewards_and_proceed"],
+        "reward": {
+            "pending_card_choice": False,
+            "can_proceed": True,
+            "rewards": [
+                {"index": 0, "reward_type": "Gold", "description": "14 Gold", "claimable": True},
+                {
+                    "index": 1,
+                    "reward_type": "Card",
+                    "description": "Add a card to your deck.",
+                    "claimable": True,
+                },
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "floor": 13,
+            "current_hp": 10,
+            "max_hp": 70,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5} for _ in range(4)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize+", "type": "Attack", "rarity": "Basic", "cost": 0, "upgraded": True},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                    {"id": "POUNCE", "name": "Pounce", "type": "Attack", "rarity": "Uncommon", "cost": 2, "damage": 12},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "DODGE_AND_ROLL", "name": "Dodge and Roll", "type": "Skill", "rarity": "Common", "cost": 1, "block": 4},
+                    {"id": "BACKFLIP", "name": "Backflip", "type": "Skill", "rarity": "Common", "cost": 1, "block": 5, "description": "Gain 5 Block. Draw 2 cards."},
+                    {"id": "POISONED_STAB", "name": "Poisoned Stab", "type": "Attack", "rarity": "Common", "cost": 1, "damage": 6},
+                    {"id": "SPOILS_MAP", "name": "Spoils Map", "type": "Quest", "rarity": "Quest", "cost": -1},
+                    {"id": "DEADLY_POISON", "name": "Deadly Poison", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "BACKFLIP", "name": "Backflip", "type": "Skill", "rarity": "Common", "cost": 1, "block": 5, "description": "Gain 5 Block. Draw 2 cards."},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "POMANDER", "name": "Pomander"},
+                {"id": "FROZEN_EGG", "name": "Frozen Egg"},
+            ],
+        },
+    }
+    assert ai.deck_plan(critical_survival_card_claim_state).needs_aoe
+    assert ai.claim_card_reward_score(critical_survival_card_claim_state)[0] >= ai.claim_card_reward_threshold(
+        critical_survival_card_claim_state
+    )
+    assert ai.choose_claim_reward_index(critical_survival_card_claim_state) == 1
 
     covered_calculated_gamble_state = {
         "screen": "COMBAT",

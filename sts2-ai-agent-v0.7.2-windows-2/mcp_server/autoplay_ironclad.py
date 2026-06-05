@@ -5536,6 +5536,18 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
             expose_penalty += 8.0
         score -= expose_penalty
         reasons.append(f"duplicate-expose={expose_penalty:.0f}")
+    if character_id == "SILENT" and plan.needs_aoe and "aoe" in roles:
+        aoe_bonus = 28.0
+        if plan.aoe_count <= 0:
+            aoe_bonus += 14.0
+        if boss_prep:
+            aoe_bonus += 10.0
+        if hp_ratio < 0.7:
+            aoe_bonus += 8.0
+        if cost <= 1:
+            aoe_bonus += 5.0
+        score += min(72.0, aoe_bonus)
+        reasons.append(f"silent-needed-aoe={aoe_bonus:.0f}")
     boss_survival_pressure = boss_prep and (
         hp_ratio < 0.78
         or plan.block_count < 8
@@ -5776,6 +5788,8 @@ def reward_take_threshold(state, card, score):
 def claim_card_reward_score(state: "dict[str, Any]") -> "tuple[float, list[str]]":
     plan = deck_plan(state)
     profile = relic_profile(state)
+    hp, max_hp = player_hp(state)
+    hp_ratio = hp / max_hp if (hp and max_hp) else 1.0
     score = 42.0
     reasons: list[str] = []
     if plan.needs_damage or plan.needs_block:
@@ -5808,11 +5822,30 @@ def claim_card_reward_score(state: "dict[str, Any]") -> "tuple[float, list[str]]
     if profile.reward_selectivity and plan.card_count >= 18:
         score -= min(10.0, profile.reward_selectivity * 0.5)
         reasons.append("relic-selective")
+    survival_gap = bool(
+        not plan.combat_ready
+        and (plan.needs_damage or plan.needs_block or plan.needs_draw or plan.needs_scaling or plan.needs_aoe)
+    )
+    if survival_gap and hp_ratio < 0.32:
+        bonus = 28.0
+        if plan.needs_aoe:
+            bonus += 10.0
+        if plan.needs_draw:
+            bonus += 6.0
+        if plan.curse_status_count:
+            bonus += 6.0
+        score += bonus
+        reasons.append("critical-survival-card-look")
+    elif survival_gap and hp_ratio < 0.45:
+        score += 14.0
+        reasons.append("low-hp-card-look")
     return score, reasons
 
 
 def claim_card_reward_threshold(state: "dict[str, Any]") -> "float":
     plan = deck_plan(state)
+    hp, max_hp = player_hp(state)
+    hp_ratio = hp / max_hp if (hp and max_hp) else 1.0
     threshold = 28.0 if plan.card_count <= 12 else 36.0
     if plan.needs_damage or plan.needs_block:
         threshold -= 6.0
@@ -5830,6 +5863,16 @@ def claim_card_reward_threshold(state: "dict[str, Any]") -> "float":
         threshold += 10.0 + min(10.0, plan.curse_status_count * 4.0)
     if relic_profile(state).reward_selectivity and plan.card_count >= 16:
         threshold += min(8.0, relic_profile(state).reward_selectivity * 0.4)
+    survival_gap = bool(
+        not plan.combat_ready
+        and (plan.needs_damage or plan.needs_block or plan.needs_draw or plan.needs_scaling or plan.needs_aoe)
+    )
+    if survival_gap and hp_ratio < 0.32:
+        threshold -= 20.0
+        if plan.needs_aoe:
+            threshold -= 6.0
+    elif survival_gap and hp_ratio < 0.45:
+        threshold -= 8.0
     return max(18.0, threshold)
 
 
@@ -6663,7 +6706,7 @@ def shop_boss_survival_can_block_removal(
         return False
     if action == "buy_card":
         survival_card = any(reason in core_buy_reasons for reason in ("survival-card", "boss-survival-card"))
-        fills_need = any(reason in core_buy_reasons for reason in ("fills-block", "fills-damage", "fills-draw", "fills-scaling"))
+        fills_need = any(reason in core_buy_reasons for reason in ("fills-block", "fills-damage", "fills-draw", "fills-scaling", "fills-aoe"))
         if hp_ratio <= urgent_ratio and survival_card:
             return True
         return fills_need and score_margin >= policy_number("shop.boss_survival_card_block_removal_margin", 46.0)

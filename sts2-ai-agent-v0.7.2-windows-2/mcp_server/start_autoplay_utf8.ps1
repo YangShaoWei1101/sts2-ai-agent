@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Character = "RANDOM_CHARACTER",
+    [string]$Character = "SILENT",
     [int]$MaxSteps = 1200,
     [int]$Attempts = 1
 )

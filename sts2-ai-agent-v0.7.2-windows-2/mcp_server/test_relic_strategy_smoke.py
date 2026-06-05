@@ -50,6 +50,31 @@ def main() -> int:
     assert "card_quality" in profile.tags
     assert ai.choose_claim_reward_index(state) == 1
 
+    character_state = {
+        "character_select": {
+            "selected_character_id": "SILENT",
+            "characters": [
+                {"index": 0, "character_id": "IRONCLAD", "name": "Ironclad"},
+                {"index": 1, "character_id": "SILENT", "name": "Silent"},
+                {"index": 5, "character_id": "RANDOM_CHARACTER", "is_random": True},
+            ],
+        }
+    }
+    assert ai.choose_character_index(character_state, "SILENT") == 1
+    assert ai.target_character_selected(character_state, "SILENT") is True
+    assert ai.choose_character_index(character_state, "RANDOM_CHARACTER") == 5
+
+    random_character_state = {
+        "character_select": {
+            "characters": [
+                {"index": 0, "character_id": "IRONCLAD"},
+                {"index": 1, "character_id": "SILENT"},
+                {"index": 5, "character_id": "RANDOM_CHARACTER", "is_random": True, "is_selected": True},
+            ],
+        }
+    }
+    assert ai.target_character_selected(random_character_state, "RANDOM_CHARACTER") is True
+
     string_relic_state = {"run": {"relics": ["Ring of the Snake"], "deck": []}}
     assert current_relics(string_relic_state)[0]["id"] == "RING_OF_THE_SNAKE"
     assert "RING_OF_THE_SNAKE" in current_relic_ids(string_relic_state)

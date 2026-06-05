@@ -35,7 +35,7 @@ JOURNAL_PATH = Path(__file__).with_name("autoplay_decision_journal.jsonl")
 POLICY_PATH = Path(os.getenv("STS2_AUTOPLAY_POLICY", str(Path(__file__).with_name("autoplay_policy.json"))))
 EVENTS_PATH = Path(__file__).with_name("data") / "eng" / "events.json"
 CARDS_PATH = Path(__file__).with_name("data") / "eng" / "cards.json"
-TARGET_CHARACTER_ID = os.getenv("STS2_AUTOPLAY_CHARACTER", "RANDOM_CHARACTER").strip().upper()
+TARGET_CHARACTER_ID = os.getenv("STS2_AUTOPLAY_CHARACTER", "SILENT").strip().upper()
 
 
 class ReadOnlyCardSelection(RuntimeError):
@@ -8018,7 +8018,7 @@ def parse_args(argv: "list[str] | None"=None) -> "argparse.Namespace":
     parser = argparse.ArgumentParser(description="Run the STS2 local autoplay agent.")
     parser.add_argument("--character",
       default=TARGET_CHARACTER_ID,
-      help="Target character id for new runs. Default is RANDOM_CHARACTER to use the game's random-character option.")
+      help="Target character id for new runs. Default is SILENT; pass RANDOM_CHARACTER to use the game's random-character option.")
     parser.add_argument("--max-steps",
       type=int,
       default=(int(os.getenv("STS2_AUTOPLAY_MAX_STEPS", "1200"))),

@@ -5003,6 +5003,17 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     best_remaining_block = remaining_affordable_block(cards, card, remaining_energy=best_remaining_energy, state=state)
     best_preventable_gap = max(0, best_post_incoming - best_post_block - best_remaining_block)
     best_would_die = hp is not None and hp - best_preventable_gap <= 0
+    best_doomed_followup_out = bool(
+        best_score > 0
+        and (
+            card_draws_cards(card)
+            or card_energy_gain(card, state)
+            or card_star_gain(card)
+            or card_grants_combat_resource(card)
+            or best_generated_damage > 0 and best_remaining_energy > 0
+            or card_generates_combat_cards(card) and best_remaining_energy > 0
+        )
+    )
     best_incoming_reduced_by = max(0, incoming - best_post_incoming)
     best_is_turn_strength_debuff = card_is_turn_strength_debuff(card)
     best_id = normalized_card_id(card)
@@ -5111,7 +5122,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         best_would_die
         and not can_sweep_lethal
         and not has_revive_safety(state)
-        and not best_resource_followup
+        and not best_doomed_followup_out
         and not current_turn_damage_spend
     ):
         return (
@@ -6289,6 +6300,41 @@ def shop_buy_threshold_for_action(action: Any) -> float:
     return buy_threshold
 
 
+def shop_buy_threshold_for_item(action: Any, item: "dict[str, Any]", state: "dict[str, Any]", price: int) -> float:
+    threshold = shop_buy_threshold_for_action(action)
+    if action != "buy_card" or not isinstance(item, dict):
+        return threshold
+    card = item_card_payload(item) or item
+    known = CARD_KNOWLEDGE.lookup(card)
+    roles = frozenset(known.roles if known is not None else known_card_roles(card))
+    plan = deck_plan(state)
+    cheap = bool(price and price <= policy_number("shop.cheap_card_price", 55.0))
+    fills_need = bool(known is not None and reward_need_filled(known, plan))
+    archetype_card = bool(known is not None and plan.wants_archetype(known))
+    survival_card = bool(
+        estimate_card_block(card) >= 5
+        or roles & {"block", "block_retention", "weak", "debuff", "strength", "dexterity", "intangible"}
+        or normalized_card_id(card) in {
+            "BACKFLIP",
+            "BLUR",
+            "CLOAK_AND_DAGGER",
+            "DODGE_AND_ROLL",
+            "LEG_SWEEP",
+            "PIERCING_WAIL",
+            "WRAITH_FORM",
+        }
+    )
+    if fills_need:
+        threshold = min(threshold, policy_number("shop.need_card_buy_threshold", 18.0))
+    if cheap and (survival_card or archetype_card):
+        threshold = min(threshold, policy_number("shop.synergy_card_buy_threshold", 30.0))
+    if cheap and survival_card:
+        threshold = min(threshold, policy_number("shop.core_card_buy_threshold", 24.0) + 20.0)
+    if "remove_card_at_shop" not in as_actions(state) and (survival_card or fills_need):
+        threshold = min(threshold, policy_number("shop.no_removal_fallback_threshold", 22.0) + 20.0)
+    return threshold
+
+
 def has_revive_safety(state: "dict[str, Any]") -> "bool":
     if has_relic(state, "LIZARD_TAIL"):
         return True
@@ -6541,7 +6587,7 @@ def choose_shop_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int], s
         if action and action in actions and score > best[0]:
             best = (score, action, effective_idx, item)
         if action and action in actions:
-            buy_threshold = shop_buy_threshold_for_action(action)
+            buy_threshold = shop_buy_threshold_for_item(action, item, state, price)
             if score >= buy_threshold and score > qualified_best[0]:
                 qualified_best = (score, action, effective_idx, item)
 
@@ -6608,7 +6654,7 @@ def choose_shop_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int], s
     if qualified_best[1]:
         log(f"shop buy action={qualified_best[1]} idx={qualified_best[2]} score={qualified_best[0]:.1f} plan={plan.summary()} relic={relic_summary(state)}", qualified_best[3])
         journal_decision("shop_buy", state, {'action':qualified_best[1], 
-         'idx':int(qualified_best[2]),  'score':round(qualified_best[0], 1),  'threshold':round(shop_buy_threshold_for_action(qualified_best[1]), 1),  'item':compact_shop_item(qualified_best[3])}, {'items':scored_items, 
+         'idx':int(qualified_best[2]),  'score':round(qualified_best[0], 1),  'threshold':round(shop_buy_threshold_for_item(qualified_best[1], qualified_best[3], state, shop_item_price(qualified_best[3])), 1),  'item':compact_shop_item(qualified_best[3])}, {'items':scored_items, 
          'gold':gold,  'removal_cost':removal_cost})
         return (
          str(qualified_best[1]), {"option_index": (int(qualified_best[2]))}, "buy useful shop item")

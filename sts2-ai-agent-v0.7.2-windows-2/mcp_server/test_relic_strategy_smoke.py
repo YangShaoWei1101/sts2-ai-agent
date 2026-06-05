@@ -1123,6 +1123,55 @@ def main() -> int:
     shop_action, _, reason = ai.choose_shop_action(silent_boss_prep_remove_over_fire_potion_state)
     assert shop_action == "remove_card_at_shop", reason
 
+    silent_post_remove_cheap_block_shop_state = {
+        "screen": "SHOP",
+        "available_actions": ["buy_card", "close_shop_inventory"],
+        "run": {
+            "character_id": "SILENT",
+            "floor": 3,
+            "current_hp": 58,
+            "max_hp": 70,
+            "gold": 37,
+            "deck": (
+                [{"id": "STRIKE_SILENT", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_SILENT", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 5} for _ in range(3)]
+                + [
+                    {"id": "NEUTRALIZE", "name": "Neutralize", "type": "Attack", "rarity": "Basic", "cost": 0},
+                    {"id": "SURVIVOR", "name": "Survivor", "type": "Skill", "rarity": "Basic", "cost": 1, "block": 8},
+                    {"id": "EXPOSE", "name": "Expose", "type": "Skill", "rarity": "Uncommon", "cost": 0},
+                    {"id": "MEMENTO_MORI", "name": "Memento Mori", "type": "Attack", "rarity": "Uncommon", "cost": 1, "damage": 9},
+                ]
+            ),
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "NEW_LEAF", "name": "New Leaf"},
+            ],
+            "potions": [{"id": "POWER_POTION", "name": "Power Potion", "occupied": True}],
+        },
+        "shop": {
+            "remove_cost": 75,
+            "items": [
+                {
+                    "index": 3,
+                    "price": 24,
+                    "card": {
+                        "id": "DODGE_AND_ROLL",
+                        "name": "Dodge and Roll",
+                        "type": "Skill",
+                        "rarity": "Common",
+                        "cost": 1,
+                        "block": 4,
+                    },
+                    "name": "Dodge and Roll",
+                    "type": "Card",
+                }
+            ],
+        },
+    }
+    shop_action, kwargs, reason = ai.choose_shop_action(silent_post_remove_cheap_block_shop_state)
+    assert shop_action == "buy_card", reason
+    assert kwargs["option_index"] == 3
+
     silent_remove_low_block_state = {
         "screen": "CARD_SELECTION",
         "selection": {
@@ -2112,6 +2161,39 @@ def main() -> int:
     }
     combat_action, _, reason = ai.choose_combat_action(doomed_weak_block_state)
     assert combat_action == "end_turn", reason
+
+    doomed_generated_block_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 3,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "CLOAK_AND_DAGGER",
+                    "name": "Cloak and Dagger",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 6,
+                    "description": "Gain 6 Block. Add 1 Shiv to your hand.",
+                    "playable": True,
+                    "requires_target": False,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "CEREMONIAL_BEAST", "hp": 162, "intent": "Attack 24"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 13,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    combat_action, _, reason = ai.choose_combat_action(doomed_generated_block_state)
+    assert combat_action == "end_turn", reason
+    assert "doomed" in reason, reason
 
     block_chain_survives_state = {
         "screen": "COMBAT",

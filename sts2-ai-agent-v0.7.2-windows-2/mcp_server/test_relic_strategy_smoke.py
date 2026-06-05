@@ -1860,6 +1860,110 @@ def main() -> int:
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 1
 
+    doomed_weak_block_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 1,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "DEFLECT",
+                    "name": "Deflect",
+                    "type": "Skill",
+                    "cost": 0,
+                    "block": 1,
+                    "playable": True,
+                    "requires_target": False,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "BOSS", "hp": 151, "intent": "Attack 25"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 8,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    combat_action, _, reason = ai.choose_combat_action(doomed_weak_block_state)
+    assert combat_action == "end_turn", reason
+
+    block_chain_survives_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 2,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 1,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+            ],
+            "enemies": [{"index": 0, "id": "BOSS", "hp": 151, "intent": "Attack 17"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 8,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(block_chain_survives_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] in {0, 1}, reason
+
+    doomed_wail_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 1,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "PIERCING_WAIL",
+                    "name": "Piercing Wail",
+                    "type": "Skill",
+                    "cost": 1,
+                    "description": "ALL enemies lose 6 Strength this turn. Exhaust.",
+                    "playable": True,
+                    "requires_target": False,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "BOSS", "hp": 151, "intent": "Attack 25"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 5,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    combat_action, _, reason = ai.choose_combat_action(doomed_wail_state)
+    assert combat_action == "end_turn", reason
+
     zero_energy_x_setup_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

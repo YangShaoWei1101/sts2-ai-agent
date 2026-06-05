@@ -4947,10 +4947,12 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and best_reduces_damage
         and hp is not None
         and hp - damage_gap <= 0
+        and hp - best_preventable_gap > 0
     )
     turn_strength_meaningful_save = bool(
         best_is_turn_strength_debuff
         and best_reduces_damage
+        and not best_would_die
         and best_incoming_reduced_by >= turn_strength_min_saved
         and (
             incoming >= turn_strength_min_incoming
@@ -5017,13 +5019,12 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     if (
         best_would_die
         and not can_sweep_lethal
-        and not best_reduces_damage
-        and best_block <= 0
+        and not has_revive_safety(state)
         and not best_resource_followup
         and not current_turn_damage_spend
     ):
         return (
-         "end_turn", {}, f"avoid nondefensive death line score={best_score:.1f}")
+         "end_turn", {}, f"avoid doomed survival line score={best_score:.1f}")
     if incoming <= current_block and best_is_pure_block and not best_safe_spend:
         return (
          "end_turn", {}, f"incoming already blocked; skip unsafe pure block score={best_score:.1f}")

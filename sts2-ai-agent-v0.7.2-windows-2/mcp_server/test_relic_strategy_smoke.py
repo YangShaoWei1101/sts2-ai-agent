@@ -1799,6 +1799,47 @@ def main() -> int:
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] in {0, 1}, reason
 
+    reindexed_enemy_target_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 2,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "DASH",
+                    "name": "Dash",
+                    "type": "Attack",
+                    "cost": 2,
+                    "damage": 10,
+                    "block": 10,
+                    "playable": True,
+                    "requires_target": True,
+                }
+            ],
+            "enemies": [
+                {"index": 0, "id": "KIN_FOLLOWER", "hp": 40, "intent": "Attack 0"},
+                {"index": 2, "id": "KIN_FOLLOWER", "hp": 40, "intent": "Attack 0"},
+                {"index": 3, "id": "KIN_PRIEST", "hp": 10, "intent": "Attack 0"},
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 44,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    assert ai.valid_targets(
+        reindexed_enemy_target_state["combat"]["hand"][0],
+        reindexed_enemy_target_state["combat"]["enemies"],
+    ) == [0, 1, 2]
+    combat_action, kwargs, reason = ai.choose_combat_action(reindexed_enemy_target_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["target_index"] == 2, reason
+
     regent_no_pressure_block_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

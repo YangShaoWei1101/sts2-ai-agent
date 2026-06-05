@@ -1721,9 +1721,26 @@ def playable_cards(state: "dict[str, Any]") -> "list[dict[str, Any]]":
 def valid_targets(card: "dict[str, Any]", enemies: "list[dict[str, Any]]") -> "list[int]":
     explicit = card.get("valid_target_indices")
     if isinstance(explicit, list):
-        if explicit:
-            return [int(i) for i in explicit if isinstance(i, int) or str(i).isdigit()]
-    return [int(enemy.get("index", i)) for i, enemy in enumerate(enemies) if enemy_alive(enemy)]
+        valid = []
+        for raw in explicit:
+            idx = first_number(raw)
+            if idx is not None and 0 <= idx < len(enemies) and enemy_alive(enemies[idx]):
+                valid.append(int(idx))
+        if valid:
+            return valid
+    return [i for i, enemy in enumerate(enemies) if enemy_alive(enemy)]
+
+
+def safe_card_target(card: "dict[str, Any]", target: "int | None", enemies: "list[dict[str, Any]]", damage: "int"=0) -> "int | None":
+    valid = valid_targets(card, enemies)
+    if not valid:
+        return None
+    if target is not None and target in valid:
+        return int(target)
+    fallback = choose_enemy_for_damage(enemies, damage)
+    if fallback is not None and fallback in valid:
+        return int(fallback)
+    return int(valid[0])
 
 
 def choose_enemy_for_damage(enemies: "list[dict[str, Any]]", damage: "int") -> "int | None":
@@ -2966,6 +2983,10 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
              "end_turn", {}, f"best card not worth playing score={best_score:.1f}")
         kwargs = {"card_index": (int(card["_index"]))}
         if card.get("requires_target"):
+            target = safe_card_target(card, target, enemies, best_damage)
+            if target is None:
+                return (
+                 "end_turn", {}, "no valid target for best card")
             kwargs["target_index"] = target
     return (
      "play_card", kwargs, f'{card.get("name") or card.get("card_id")} {reason}')
@@ -5095,6 +5116,10 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
          "end_turn", {}, f"save turn strength debuff for larger attack saved={best_incoming_reduced_by} score={best_score:.1f}")
     kwargs = {"card_index": (int(card["_index"]))}
     if card.get("requires_target"):
+        target = safe_card_target(card, target, enemies, best_damage)
+        if target is None:
+            return (
+             "end_turn", {}, "no valid target for best card")
         kwargs["target_index"] = target
     return (
      "play_card", kwargs, f'{card.get("name") or card.get("card_id")} {reason} score={best_score:.1f}')

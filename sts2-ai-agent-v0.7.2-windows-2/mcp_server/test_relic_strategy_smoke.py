@@ -582,6 +582,18 @@ def main() -> int:
     assert smith_idx == 1
     assert smith_target is not None
 
+    mid_hp_silent_key_upgrade_state = {
+        **silent_campfire_state,
+        "run": {
+            **silent_campfire_state["run"],
+            "floor": 9,
+            "current_hp": 42,
+        },
+    }
+    mid_hp_smith_idx, mid_hp_smith_target = ai.choose_rest_index(mid_hp_silent_key_upgrade_state)
+    assert mid_hp_smith_idx == 1
+    assert mid_hp_smith_target is not None
+
     low_hp_campfire_state = {
         **silent_campfire_state,
         "run": {
@@ -2218,7 +2230,8 @@ def main() -> int:
         },
     }
     combat_action, kwargs, reason = ai.choose_combat_action(desperation_damage_state)
-    assert combat_action == "end_turn", reason
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] == 0, reason
 
     lizard_tail_spend_damage_state = {
         **desperation_damage_state,
@@ -2753,6 +2766,48 @@ def main() -> int:
     combat_action, kwargs, reason = ai.choose_combat_action(doomed_block_mitigation_state)
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 0, reason
+
+    doomed_safe_attack_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 2,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": True,
+                },
+                {
+                    "index": 1,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": True,
+                },
+            ],
+            "enemies": [{"index": 0, "id": "BOSS", "hp": 151, "intent": "Attack 18"}],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 5,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(doomed_safe_attack_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] in {0, 1}, reason
 
     zero_energy_x_setup_state = {
         "screen": "COMBAT",

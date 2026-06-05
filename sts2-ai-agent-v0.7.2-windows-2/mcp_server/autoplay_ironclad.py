@@ -5177,7 +5177,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and not enemy_punishes_extra_card_play(state, card)
         and not card_has_consuming_or_harmful_cost(card, state)
     )
-    current_turn_damage_spend = no_more_defense_to_buy and (not best_would_die or has_revive_safety(state))
+    current_turn_damage_spend = no_more_defense_to_buy
     turn_strength_min_saved = policy_number("combat.turn_strength_debuff_min_saved", 6.0)
     turn_strength_min_incoming = policy_number("combat.turn_strength_debuff_min_incoming", 10.0)
     turn_strength_min_gap = policy_number("combat.turn_strength_debuff_min_gap", 8.0)
@@ -6304,6 +6304,12 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
     upgrade_value, upgrade_card_id = campfire_upgrade_value(state, upgrade_target)
     strong_upgrade = upgrade_value >= (42.0 if character_id == "SILENT" else 50.0)
     solid_upgrade = upgrade_value >= (28.0 if character_id == "SILENT" else 36.0)
+    silent_key_upgrade_window = bool(
+        character_id == "SILENT"
+        and strong_upgrade
+        and ratio >= 0.58
+        and floor < 15
+    )
     safe_smith_ratio = 0.72
     if profile.combat_strength >= 18 and plan.combat_ready:
         safe_smith_ratio -= 0.04
@@ -6340,7 +6346,10 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
                 score += 34
                 reasons.append("low-heal")
             elif ratio < safe_smith_ratio:
-                if strong_upgrade and ratio >= 0.65:
+                if silent_key_upgrade_window:
+                    score += 8
+                    reasons.append("defer-heal-for-key-upgrade")
+                elif strong_upgrade and ratio >= 0.65:
                     score += 10
                     reasons.append("mid-hp-key-upgrade")
                 else:
@@ -6375,7 +6384,10 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
                 penalty = 34 + (14 if not plan.combat_ready else 0)
                 if plan.needs_block or plan.needs_draw:
                     penalty += 10
-                if solid_upgrade and ratio >= 0.62:
+                if silent_key_upgrade_window:
+                    penalty = min(penalty, 12)
+                    reasons.append("silent-key-upgrade-risk-credit")
+                elif solid_upgrade and ratio >= 0.62:
                     penalty -= 22 if character_id == "SILENT" and strong_upgrade else 12
                     reasons.append("upgrade-risk-credit")
                 score -= max(12, penalty)

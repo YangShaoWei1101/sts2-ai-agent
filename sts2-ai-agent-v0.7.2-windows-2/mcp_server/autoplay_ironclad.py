@@ -4956,6 +4956,23 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
                 score -= 12
                 reasons.append("survival-pressure")
         if preventable_gap and not can_sweep_lethal:
+            if (
+                can_cover_with_hand
+                and damage_gap > 0
+                and remaining_energy < energy
+                and dmg > 0
+                and effective_block <= 0
+                and not is_lethal
+                and not reduces_incoming
+                and not has_tactical_followup
+            ):
+                reserve_penalty = 22 + preventable_gap * 6.0 + missed_affordable_block * 8.0
+                if incoming >= 10:
+                    reserve_penalty += 12
+                if hp_ratio < 0.75:
+                    reserve_penalty *= 1.25
+                score -= min(120, reserve_penalty)
+                reasons.append(f"block-reserve-miss={preventable_gap}")
             if hp_after <= 0:
                 score -= 300
                 reasons.append("would-die")

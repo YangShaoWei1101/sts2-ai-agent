@@ -2075,6 +2075,95 @@ def main() -> int:
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 0
 
+    multi_energy_block_reserve_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 3,
+            "player": {"block": 0, "energy": 3, "attacks_played_this_turn": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 1,
+                    "id": "MEMENTO_MORI",
+                    "name": "Memento Mori",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 9,
+                    "playable": True,
+                    "requires_target": True,
+                },
+                {
+                    "index": 2,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 3,
+                    "id": "DEFEND_SILENT",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 4,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": True,
+                },
+                {
+                    "index": 5,
+                    "id": "STRIKE_SILENT",
+                    "name": "Strike+",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 9,
+                    "playable": True,
+                    "requires_target": True,
+                },
+            ],
+            "enemies": [
+                {"index": 0, "id": "TWIG_SLIME_M", "hp": 26, "block": 0, "intent": "Attack 11"},
+                {"index": 1, "id": "FLYCONID", "hp": 48, "block": 0, "intent": "Attack 0"},
+            ],
+        },
+        "run": {
+            "character_id": "SILENT",
+            "current_hp": 50,
+            "max_hp": 70,
+            "deck": [],
+            "relics": [
+                {"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"},
+                {"id": "LETTER_OPENER", "name": "Letter Opener"},
+                {"id": "ORNAMENTAL_FAN", "name": "Ornamental Fan"},
+            ],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(multi_energy_block_reserve_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] in {0, 2, 3}, reason
+
     desperation_damage_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

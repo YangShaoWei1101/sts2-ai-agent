@@ -1131,6 +1131,17 @@ def card_generates_combat_cards(card: "dict[str, Any]") -> "bool":
                                             '小刀')))
 
 
+def card_adds_self_copy_to_deck(card: "dict[str, Any]") -> "bool":
+    cid = normalized_card_id(card)
+    if cid == "ANGER":
+        return True
+    blob = card_rules_blob(card)
+    return bool(
+        "copy of this card" in blob
+        and any(token in blob for token in ("discard pile", "draw pile", "deck"))
+    )
+
+
 def generated_card_damage(card: "dict[str, Any]") -> "int":
     blob = card_text_blob(card)
     amount = dynamic_value_amount(card, "Cards")
@@ -5625,6 +5636,13 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     best_id = normalized_card_id(card)
     best_tactical_discard = discard_play_has_tactical_value(card, state)
     best_other_hand_cards = [other for other in cards if not same_card_instance(other, card)]
+    best_self_copy_clog = card_adds_self_copy_to_deck(card)
+    best_self_copy_clog_pressure = bool(
+        best_self_copy_clog
+        and not can_sweep_lethal
+        and not best_reduces_damage
+        and (survival_pressure or boss_like_combat or hp_ratio < 0.55)
+    )
     best_nonblock_immediate_value = bool(
         best_damage > 0
         or best_generated_damage > 0
@@ -5646,6 +5664,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and not best_is_turn_strength_debuff
         and not enemy_punishes_extra_card_play(state, card)
         and not card_has_consuming_or_harmful_cost(card, state)
+        and not best_self_copy_clog_pressure
     )
     current_turn_damage_spend = no_more_defense_to_buy
     turn_strength_min_saved = policy_number("combat.turn_strength_debuff_min_saved", 6.0)
@@ -5819,6 +5838,14 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     ):
         return (
          "end_turn", {}, f"skip no-energy pressure draw score={best_score:.1f}")
+    if (
+        best_self_copy_clog_pressure
+        and best_score <= damage_floor
+        and not best_would_die
+        and not can_sweep_lethal
+    ):
+        return (
+         "end_turn", {}, f"skip pressure self-copy attack score={best_score:.1f}")
     if (
         best_score <= damage_floor
         and not best_safe_spend

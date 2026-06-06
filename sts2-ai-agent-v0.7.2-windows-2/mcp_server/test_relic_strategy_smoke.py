@@ -2993,6 +2993,52 @@ def main() -> int:
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 1, reason
 
+    ironclad_pressure_self_copy_attack_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 0,
+            "player": {"block": 3},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "ANGER",
+                    "name": "Anger",
+                    "type": "Attack",
+                    "rarity": "Common",
+                    "cost": 0,
+                    "damage": 4,
+                    "description": "Deal 4 damage. Add a copy of this card into your Discard Pile.",
+                    "playable": True,
+                    "requires_target": True,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "LAGAVULIN_MATRIARCH", "hp": 80, "intent": "Attack 14"}],
+        },
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 17,
+            "current_hp": 20,
+            "max_hp": 80,
+            "deck": [],
+            "relics": [{"id": "BURNING_BLOOD", "name": "Burning Blood"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(ironclad_pressure_self_copy_attack_state)
+    assert combat_action == "end_turn", reason
+    assert "self-copy" in reason
+
+    lethal_self_copy_attack_state = {
+        **ironclad_pressure_self_copy_attack_state,
+        "combat": {
+            **ironclad_pressure_self_copy_attack_state["combat"],
+            "enemies": [{"index": 0, "id": "LAGAVULIN_MATRIARCH", "hp": 4, "intent": "Attack 14"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(lethal_self_copy_attack_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] == 0, reason
+
     partial_chip_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

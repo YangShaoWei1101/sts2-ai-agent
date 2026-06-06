@@ -424,6 +424,26 @@ def main() -> int:
             self.executed.append((action, kwargs))
             return {"ok": True}
 
+    character_select_state = {
+        "screen": "CHARACTER_SELECT",
+        "available_actions": ["select_character", "embark"],
+        "character_select": {
+            "selected_character_id": "SILENT",
+            "characters": [
+                {"index": 0, "id": "IRONCLAD", "is_selected": False},
+                {"index": 1, "id": "SILENT", "is_selected": True},
+            ],
+        },
+        "run": {},
+    }
+    character_client = RecordingClient(character_select_state)
+    autoplayer = ai.Autoplayer(character_client, 0, 0, None, 1, 1, set(), {}, 0)
+    autoplayer.step(character_select_state, ai.as_actions(character_select_state))
+    assert character_client.executed[0][0] == "select_character"
+    assert character_client.executed[0][1]["option_index"] == 0
+    autoplayer.step(character_select_state, ai.as_actions(character_select_state))
+    assert character_client.executed[1][0] == "embark"
+
     class SequencedClient(RecordingClient):
         def __init__(self, states: list[dict]) -> None:
             super().__init__(states[-1])
@@ -483,6 +503,17 @@ def main() -> int:
         "agent_view": {"selection": {}},
     }
     assert ai.readonly_card_selection_reason(readonly_select_alias_state) == "read-only card pile view"
+    spanish_readonly_select_state = {
+        **fresh_selection_state,
+        "selection": {
+            "prompt": "[center]Cuando te quedas sin cartas, se mezclan las cartas de tu mazo de robo.",
+            "max_select": 0,
+            "min_select": 0,
+            "cards": [],
+        },
+        "agent_view": {"selection": {}},
+    }
+    assert ai.readonly_card_selection_reason(spanish_readonly_select_state) == "read-only card pile view"
     headbutt_topdeck_selection_state = {
         "screen": "CARD_SELECTION",
         "in_combat": True,
@@ -812,6 +843,43 @@ def main() -> int:
     }
     low_hp_rest_idx, _ = ai.choose_rest_index(low_hp_campfire_state)
     assert low_hp_rest_idx == 0
+
+    ironclad_boss_prep_fragile_smith_state = {
+        "screen": "REST",
+        "available_actions": ["choose_rest_option"],
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 16,
+            "current_hp": 63,
+            "max_hp": 80,
+            "deck": (
+                [{"id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [
+                    {"id": "BASH", "name": "Bash+", "type": "Attack", "rarity": "Basic", "cost": 2, "upgraded": True},
+                    {"id": "MOLTEN_FIST", "name": "Molten Fist+", "type": "Attack", "rarity": "Common", "cost": 1, "upgraded": True},
+                    {"id": "TRUE_GRIT", "name": "True Grit", "type": "Skill", "rarity": "Common", "cost": 1, "block": 7},
+                    {"id": "CINDER", "name": "Cinder", "type": "Attack", "rarity": "Common", "cost": 2, "damage": 18},
+                    {"id": "INFERNAL_BLADE", "name": "Infernal Blade", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                    {"id": "BULLY", "name": "Bully", "type": "Attack", "rarity": "Uncommon", "cost": 0},
+                ]
+            ),
+            "relics": [
+                {"id": "BURNING_BLOOD", "name": "Burning Blood"},
+                {"id": "POMANDER", "name": "Pomander"},
+                {"id": "BRONZE_SCALES", "name": "Bronze Scales"},
+            ],
+        },
+        "rest": {
+            "options": [
+                {"index": 0, "option_id": "HEAL", "title": "Rest"},
+                {"index": 1, "option_id": "SMITH", "title": "Smith"},
+            ]
+        },
+    }
+    boss_rest_idx, boss_rest_target = ai.choose_rest_index(ironclad_boss_prep_fragile_smith_state)
+    assert boss_rest_idx == 0
+    assert boss_rest_target is None
 
     whisper_state = {
         "screen": "EVENT",

@@ -6936,6 +6936,22 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
     elif solid_upgrade and (character_id == "SILENT" or plan.combat_ready):
         safe_smith_ratio -= 0.04 if character_id == "SILENT" else 0.02
     safe_smith_ratio = max(0.58, min(0.82, safe_smith_ratio))
+    boss_prep = floor in BOSS_PREP_FLOORS or floor >= 28
+    boss_prep_risk_points = sum(
+        int(flag)
+        for flag in (
+            plan.needs_draw,
+            plan.needs_scaling,
+            plan.needs_aoe,
+            getattr(plan, "basic_count", 0) >= 8,
+            getattr(plan, "removable_count", 0) >= 8,
+        )
+    )
+    boss_prep_deck_quality_risk = bool(
+        boss_prep
+        and ratio < 0.86
+        and boss_prep_risk_points >= 2
+    )
     best = (-999.0, 0, None, {})
     scored = []
     for i, opt in enumerate(opts):
@@ -6970,6 +6986,9 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
             elif ratio < 0.78 and not plan.combat_ready:
                 score += 12
                 reasons.append("deck-not-ready-heal")
+            if boss_prep_deck_quality_risk:
+                score += min(46.0, 20.0 + max(0.0, 0.86 - ratio) * 80.0 + boss_prep_risk_points * 4.0)
+                reasons.append("boss-prep-deck-buffer")
             if "sustain" in profile.tags and ratio >= 0.62 and plan.combat_ready:
                 score -= 4
                 reasons.append("relic-sustain-buffer")
@@ -7011,6 +7030,12 @@ def choose_rest_index(state: "dict[str, Any]") -> "tuple[int, int | None]":
                 else:
                     score -= 12
                     reasons.append("borderline-smith")
+            if boss_prep_deck_quality_risk:
+                penalty = min(34.0, 12.0 + max(0.0, 0.86 - ratio) * 60.0 + boss_prep_risk_points * 3.0)
+                if strong_upgrade:
+                    penalty = max(10.0, penalty - 6.0)
+                score -= penalty
+                reasons.append("boss-prep-deck-risk")
         if any((k in blob for k in ('dig', 'relic', '遗物'))):
             score += 14 if ratio >= 0.65 else -2
         if "HATCH" in option_label or any((k in blob for k in ('hatch', '孵化'))):
@@ -7786,6 +7811,10 @@ def readonly_card_selection_reason(state: "dict[str, Any]") -> "str | None":
         "discard pile",
         "will be shuffled",
         "shuffled into",
+        "mazo de robo",
+        "pila de robo",
+        "pila de descarte",
+        "se mezclan",
         "抽牌堆耗尽",
         "洗入抽牌堆",
         "抽牌堆",
@@ -8285,6 +8314,8 @@ class Autoplayer:
     skipped_reward_claims: "set[str] | None"
     pending_card_reward_claim_key = None
     pending_card_reward_claim_key: "str | None"
+    selected_target_character = False
+    selected_target_character: "bool"
 
     def act(self, action, reason, **kwargs):
         kwargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -8434,15 +8465,22 @@ class Autoplayer:
                 self.act("confirm_modal", "confirm modal")
             return
         if "open_character_select" in actions:
+            self.selected_target_character = False
             self.act("open_character_select", f"start {TARGET_CHARACTER_ID} run")
             return
-        if "select_character" in actions:
-            if not target_character_selected(state, TARGET_CHARACTER_ID):
+        if "select_character" in actions and not self.selected_target_character:
+            self.act("select_character",
+              f"select {TARGET_CHARACTER_ID}",
+              option_index=(choose_character_index(state, TARGET_CHARACTER_ID)))
+            self.selected_target_character = True
+            return
+        if "embark" in actions:
+            if "select_character" in actions and not self.selected_target_character:
                 self.act("select_character",
                   f"select {TARGET_CHARACTER_ID}",
                   option_index=(choose_character_index(state, TARGET_CHARACTER_ID)))
+                self.selected_target_character = True
                 return
-        if "embark" in actions:
             self.act("embark", f"embark {TARGET_CHARACTER_ID}")
             return
         if "continue_run" in actions:
@@ -8608,15 +8646,22 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
             self.act("confirm_modal", "confirm modal")
         return
     if "open_character_select" in actions:
+        self.selected_target_character = False
         self.act("open_character_select", f"start {TARGET_CHARACTER_ID} run")
         return
-    if "select_character" in actions:
-        if not target_character_selected(state, TARGET_CHARACTER_ID):
+    if "select_character" in actions and not self.selected_target_character:
+        self.act("select_character",
+          f"select {TARGET_CHARACTER_ID}",
+          option_index=(choose_character_index(state, TARGET_CHARACTER_ID)))
+        self.selected_target_character = True
+        return
+    if "embark" in actions:
+        if "select_character" in actions and not self.selected_target_character:
             self.act("select_character",
               f"select {TARGET_CHARACTER_ID}",
               option_index=(choose_character_index(state, TARGET_CHARACTER_ID)))
+            self.selected_target_character = True
             return
-    if "embark" in actions:
         self.act("embark", f"embark {TARGET_CHARACTER_ID}")
         return
     if "continue_run" in actions and screen == "MAIN_MENU":

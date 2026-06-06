@@ -6987,6 +6987,17 @@ def shop_buy_threshold_for_item(action: Any, item: "dict[str, Any]", state: "dic
         threshold = min(threshold, policy_number("shop.core_card_buy_threshold", 24.0) + 20.0)
     if "remove_card_at_shop" not in as_actions(state) and (survival_card or fills_need):
         threshold = min(threshold, policy_number("shop.no_removal_fallback_threshold", 22.0) + 20.0)
+    profile = relic_profile(state)
+    if profile.has("BING_BONG"):
+        cid = normalized_card_id(card)
+        duplicate_count = int(plan.ids.get(cid, 0) or 0)
+        low_impact = not bool(roles & REWARD_UTILITY_ROLES)
+        if duplicate_count:
+            threshold += min(36.0, 14.0 + duplicate_count * 8.0)
+        if plan.card_count >= 16 and low_impact and not (fills_need or survival_card or archetype_card):
+            threshold += 20.0
+        if plan.card_count >= 20 and not fills_need:
+            threshold += 10.0
     return threshold
 
 

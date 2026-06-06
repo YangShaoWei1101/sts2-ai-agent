@@ -81,6 +81,7 @@ CARD_REWARD_RELICS = {
     "WHITE_STAR",
     "WING_CHARM",
 }
+CARD_DUPLICATING_RELICS = {"BING_BONG"}
 POTION_RELICS = {"ALCHEMICAL_COFFER", "CAULDRON", "DELICATE_FROND", "POTION_BELT", "WHITE_BEAST_STATUE"}
 START_BLOCK_RELICS = {"ANCHOR"}
 START_RESOURCE_RELICS = {"DIVINE_RIGHT", "LANTERN", "VENERABLE_TEA_SET"}
@@ -483,6 +484,79 @@ def _deck_role_count(state: dict[str, Any], *roles: str) -> int:
     return _deck_count(state, lambda card: bool(_card_roles(card) & wanted))
 
 
+def _card_id(card: dict[str, Any]) -> str:
+    known = CARD_KNOWLEDGE.lookup(card)
+    if known is not None:
+        return str(known.id or "").upper()
+    for key in ("card_id", "id", "internal_id", "name"):
+        raw = str(card.get(key) or "").strip()
+        if raw:
+            return raw.replace("-", "_").replace(" ", "_").upper()
+    return ""
+
+
+def relic_card_copy_penalty(
+    card: dict[str, Any],
+    state: dict[str, Any],
+    roles: set[str],
+    *,
+    damage: int,
+    block: int,
+) -> tuple[float, list[str]]:
+    profile = relic_profile(state)
+    if not profile.has(*CARD_DUPLICATING_RELICS):
+        return 0.0, []
+    plan = CARD_KNOWLEDGE.deck_plan(state)
+    if plan.card_count < 14:
+        return 0.0, []
+    cid = _card_id(card)
+    duplicate_count = int(plan.ids.get(cid, 0) or 0)
+    utility_roles = {
+        "aoe",
+        "block_retention",
+        "debuff",
+        "discard",
+        "draw",
+        "energy",
+        "exhaust",
+        "focus",
+        "orb",
+        "power_scaling",
+        "status_cleanup",
+        "vulnerable",
+        "weak",
+    }
+    fills_need = bool(
+        (plan.needs_damage and ("attack" in roles) and (damage >= 12 or "vulnerable" in roles or "aoe" in roles or card_costs_x(card)))
+        or (plan.needs_block and ("block" in roles or "weak" in roles or block >= 8))
+        or (plan.needs_draw and "draw" in roles)
+        or (plan.needs_aoe and "aoe" in roles)
+        or (plan.needs_scaling and "power_scaling" in roles)
+    )
+    low_impact = not bool(roles & utility_roles)
+    penalty = 0.0
+    if duplicate_count:
+        penalty += 22.0 + min(30.0, duplicate_count * 10.0)
+    if plan.card_count >= 18:
+        penalty += 10.0
+    if plan.card_count >= 22:
+        penalty += 10.0
+    if low_impact and not fills_need:
+        penalty += 18.0
+    if "attack" in roles and not plan.needs_damage and not (roles & {"aoe", "draw", "energy", "debuff", "vulnerable", "weak"}):
+        penalty += 12.0
+    if "block" in roles and not plan.needs_block and not (roles & {"draw", "weak", "block_retention"}):
+        penalty += 8.0
+    if fills_need:
+        penalty -= 14.0
+    if plan.needs_draw and "draw" in roles:
+        penalty -= 18.0
+    penalty = max(0.0, min(84.0, penalty))
+    if not penalty:
+        return 0.0, []
+    return penalty, [f"relic-bing-bong-copy-risk={penalty:.0f}"]
+
+
 def relic_damage_bonus(card: dict[str, Any], state: dict[str, Any], base_damage: int = 0) -> tuple[int, list[str]]:
     profile = relic_profile(state)
     roles = _card_roles(card)
@@ -641,6 +715,11 @@ def relic_card_reward_modifier(card: dict[str, Any], state: dict[str, Any], *, d
         score += min(6, profile.energy_support * 3)
     if profile.has("ETERNAL_FEATHER") and plan.card_count >= 20 and roles <= {"attack"}:
         score -= 3
+
+    copy_penalty, copy_reasons = relic_card_copy_penalty(card, state, roles, damage=damage, block=block)
+    if copy_penalty:
+        score -= copy_penalty
+        reasons.extend(copy_reasons)
 
     generic_low_impact = roles <= {"attack"} or roles <= {"block"} or not (roles & {"draw", "energy", "power_scaling", "discard", "orb", "focus", "aoe", "debuff"})
     if profile.reward_selectivity:

@@ -1264,6 +1264,92 @@ def main() -> int:
     )
     assert any("ironclad-premium-draw" in reason for reason in battle_trance.get("_knowledge_reasons", []))
 
+    bing_bong_shop_state = {
+        "screen": "SHOP",
+        "available_actions": ["buy_card", "remove_card_at_shop", "close_shop_inventory"],
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 21,
+            "current_hp": 69,
+            "max_hp": 80,
+            "gold": 200,
+            "deck": (
+                [{"id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [{"id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(2)]
+                + [
+                    {"id": "BASH", "name": "Bash", "type": "Attack", "rarity": "Basic", "cost": 2, "upgraded": True},
+                    {"id": "CINDER", "name": "Cinder", "type": "Attack", "rarity": "Common", "cost": 2, "upgraded": True},
+                    {"id": "CINDER", "name": "Cinder", "type": "Attack", "rarity": "Common", "cost": 2, "upgraded": True},
+                    {"id": "POMMEL_STRIKE", "name": "Pommel Strike", "type": "Attack", "rarity": "Common", "cost": 1, "upgraded": True},
+                    {"id": "JUGGERNAUT", "name": "Juggernaut", "type": "Power", "rarity": "Rare", "cost": 2},
+                    {"id": "DOMINATE", "name": "Dominate", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                    {"id": "MOLTEN_FIST", "name": "Molten Fist", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "DOMINATE", "name": "Dominate", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                    {"id": "SHRUG_IT_OFF", "name": "Shrug It Off", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "SECOND_WIND", "name": "Second Wind", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                    {"id": "MOLTEN_FIST", "name": "Molten Fist", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "COLOSSUS", "name": "Colossus", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                ]
+            ),
+            "relics": [
+                {"id": "BURNING_BLOOD", "name": "Burning Blood"},
+                {"id": "BING_BONG", "name": "Bing Bong"},
+            ],
+        },
+        "shop": {
+            "remove_cost": 75,
+            "cards": [
+                {
+                    "index": 1,
+                    "price": 71,
+                    "card": {
+                        "id": "MOLTEN_FIST",
+                        "name": "Molten Fist",
+                        "type": "Attack",
+                        "rarity": "Common",
+                        "cost": 1,
+                        "damage": 10,
+                        "description": "Deal 10 damage. Double the enemy's Vulnerable. Exhaust.",
+                    },
+                },
+                {
+                    "index": 2,
+                    "price": 68,
+                    "card": {
+                        "id": "BATTLE_TRANCE",
+                        "name": "Battle Trance",
+                        "type": "Skill",
+                        "rarity": "Uncommon",
+                        "cost": 0,
+                        "description": "Draw 3 cards. You cannot draw additional cards this turn.",
+                    },
+                },
+            ],
+        },
+    }
+    duplicate_shop_card = bing_bong_shop_state["shop"]["cards"][0]
+    duplicate_score = ai.score_reward_card(duplicate_shop_card["card"], bing_bong_shop_state) - duplicate_shop_card["price"] / 35
+    duplicate_threshold = ai.shop_buy_threshold_for_item(
+        "buy_card",
+        duplicate_shop_card,
+        bing_bong_shop_state,
+        duplicate_shop_card["price"],
+    )
+    assert duplicate_score < duplicate_threshold, (
+        duplicate_score,
+        duplicate_threshold,
+        duplicate_shop_card["card"].get("_knowledge_reasons"),
+    )
+    assert any("relic-bing-bong-copy-risk" in reason for reason in duplicate_shop_card["card"].get("_knowledge_reasons", []))
+
+    draw_shop_card = bing_bong_shop_state["shop"]["cards"][1]
+    draw_score = ai.score_reward_card(draw_shop_card["card"], bing_bong_shop_state) - draw_shop_card["price"] / 35
+    draw_threshold = ai.shop_buy_threshold_for_item("buy_card", draw_shop_card, bing_bong_shop_state, draw_shop_card["price"])
+    assert draw_score >= draw_threshold, (draw_score, draw_threshold, draw_shop_card["card"].get("_knowledge_reasons"))
+
+    shop_action, _, shop_reason = ai.choose_shop_action(bing_bong_shop_state)
+    assert shop_action == "remove_card_at_shop", (shop_action, shop_reason)
+
     reward_selection_state = {
         "screen": "CARD_SELECTION",
         "available_actions": ["select_deck_card"],

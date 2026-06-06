@@ -2001,6 +2001,108 @@ def known_card_type(card: "dict[str, Any]") -> "str":
     return (known.type if known else str(card.get("card_type") or card.get("type") or "")).lower()
 
 
+def card_provides_block_retention(card: "dict[str, Any] | None") -> "bool":
+    if not isinstance(card, dict):
+        return False
+    cid = normalized_card_id(card)
+    blob = card_text_blob(card)
+    roles = known_card_roles(card)
+    if cid in {"BARRICADE", "BLUR", "BUFFER"}:
+        return True
+    if "block_retention" in roles:
+        return True
+    return any(
+        token in blob
+        for token in (
+            "block is not removed",
+            "retain your block",
+            "keep your block",
+            "保留格挡",
+            "格挡不会",
+            "澹佸瀿",
+        )
+    )
+
+
+def player_has_block_retention(state: "dict[str, Any]") -> "bool":
+    combat = state.get("combat") or {}
+    power_sources = []
+    player = current_player(state)
+    if isinstance(player, dict):
+        power_sources.extend(player.get("powers") or [])
+    combat_player = combat.get("player") or {}
+    if isinstance(combat_player, dict):
+        power_sources.extend(combat_player.get("powers") or [])
+    for power in power_sources:
+        blob = text_blob(power)
+        pid = str((power or {}).get("power_id") or (power or {}).get("id") or "").upper()
+        if pid in {"BARRICADE", "BARRICADE_POWER", "BLUR", "BUFFER"}:
+            return True
+        if any(token in blob for token in ("barricade", "block_retention", "block is not removed", "澹佸瀿")):
+            return True
+    return False
+
+
+def has_affordable_block_retention(
+    cards: "list[dict[str, Any]]",
+    state: "dict[str, Any]",
+    *,
+    energy: int,
+    exclude: "dict[str, Any] | None" = None,
+) -> "bool":
+    for card in cards:
+        if exclude is not None and same_card_instance(card, exclude):
+            continue
+        if card.get("playable") is False or card_has_unmet_play_condition(card, state):
+            continue
+        if card_provides_block_retention(card) and combat_card_energy_cost(card, state) <= energy:
+            return True
+    return False
+
+
+IRONCLAD_BODY_SLAM_SUPPORT_IDS = frozenset({
+    "BARRICADE",
+    "ENTRENCH",
+    "FLAME_BARRIER",
+    "GHOSTLY_ARMOR",
+    "IMPERVIOUS",
+    "POWER_THROUGH",
+    "RAGE",
+    "SHRUG_IT_OFF",
+    "TRUE_GRIT",
+})
+
+
+def ironclad_body_slam_support(plan: "Any", state: "dict[str, Any] | None" = None) -> int:
+    support = 0
+    for card_id in IRONCLAD_BODY_SLAM_SUPPORT_IDS:
+        support += int(plan.ids.get(card_id, 0) or 0)
+    support += max(0, int(getattr(plan, "block_count", 0) or 0) - 4)
+    support += int(getattr(plan, "debuff_count", 0) or 0)
+    if int(plan.ids.get("BARRICADE", 0) or 0):
+        support += 3
+    if int(plan.ids.get("ENTRENCH", 0) or 0):
+        support += 2
+    if state is not None:
+        profile = CARD_KNOWLEDGE.deck_profile(state)
+        support += profile.role("block_retention") * 2
+        support += profile.role("dexterity")
+        support += profile.role("weak")
+    return support
+
+
+def ironclad_body_slam_reward_penalty(card_id: str, plan: "Any", state: "dict[str, Any]") -> "tuple[float, str | None]":
+    if str(getattr(plan, "character_id", "") or "").upper() != "IRONCLAD" or card_id != "BODY_SLAM":
+        return 0.0, None
+    support = ironclad_body_slam_support(plan, state)
+    existing = int(plan.ids.get("BODY_SLAM", 0) or 0)
+    if support < 7:
+        return 70.0 + existing * 18.0, f"unsupported-body-slam={support}"
+    if support < 10 and existing:
+        return 22.0 + existing * 10.0, f"duplicate-body-slam-before-engine={support}"
+    return 0.0, None
+
+
 PURE_BLOCK_UTILITY_ROLES = frozenset({
     "draw",
     "energy",
@@ -2246,12 +2348,21 @@ def card_setup_value(card: "dict[str, Any]", state: "dict[str, Any]", cards: "li
     score = 0.0
     baggage = hand_baggage_count(cards)
     payload_count = hand_playable_payload_count(cards, state)
+    hp, max_hp = player_hp(state)
+    hp_ratio = hp / max_hp if (hp and max_hp) else 1.0
+    floor = first_number((state.get("run") or {}).get("floor") or (state.get("run") or {}).get("current_floor")) or 0
+    boss_like_combat = bool(
+        floor in {17, 33, 49}
+        or any("boss" in str(enemy.get("enemy_id") or enemy.get("id") or "").lower() for enemy in enemies if enemy_alive(enemy))
+        or any((first_number(enemy.get("max_hp") or enemy.get("maxHealth")) or 0) >= 150 for enemy in enemies if enemy_alive(enemy))
+    )
     has_followup_attack = any((not same_card_instance(other, card) and combat_card_damage(other, state) > 0 and followup_card_energy_cost(card, other, state, energy_after_card) <= energy_after_card for other in cards))
     has_followup_block = any((not same_card_instance(other, card) and estimate_card_block(other) > 0 and followup_card_energy_cost(card, other, state, energy_after_card) <= energy_after_card for other in cards))
     affordable_missing_star = any((not same_card_instance(other, card) and combat_card_star_cost(other, state) > stars and combat_card_star_cost(other, state) <= stars + card_star_gain(card) for other in cards))
     draws_cards = card_draws_cards(card)
     grants_resource = card_grants_combat_resource(card)
     generates_cards = card_generates_combat_cards(card)
+    is_block_retention_setup = card_provides_block_retention(card)
     is_power_setup = "power_scaling" in roles or known_card_type(card) == "power" or "power" in blob or "能力" in blob
     is_debuff_setup = any((token in roles for token in ('vulnerable', 'weak', 'debuff', 'doom'))) or any((token in blob for token in ('vulnerable', 'weak', 'doom', '易伤', '虚弱', '灾厄')))
     is_summon_setup = cid in frozenset({'BODYGUARD', 'SUMMON_FORTH', 'NECRO_MASTERY'}) or any((token in blob for token in ('summon', '召唤')))
@@ -2330,6 +2441,18 @@ def card_setup_value(card: "dict[str, Any]", state: "dict[str, Any]", cards: "li
         if incoming > current_block + 10 and not block:
             score -= 20
             reasons.append("risky-power")
+
+    if is_block_retention_setup:
+        retained_block = remaining_affordable_block(cards, card, remaining_energy=energy_after_card, state=state)
+        retention_bonus = 16 + min(48.0, retained_block * (4.0 if hp_ratio < 0.45 else 2.6))
+        if boss_like_combat:
+            retention_bonus += 24
+        if hp_ratio < 0.35:
+            retention_bonus += 22
+        if incoming <= current_block and retained_block >= 5:
+            retention_bonus += 14
+        score += retention_bonus
+        reasons.append("setup-block-retention")
 
     if is_debuff_setup:
         debuff_bonus = 20
@@ -4807,6 +4930,15 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and damage_gap >= policy_number("combat.boss_block_pressure_gap", 6.0)
         and affordable_block_now > 0
     )
+    block_retention_active = player_has_block_retention(state)
+    block_retention_available = block_retention_active or has_affordable_block_retention(cards, state, energy=energy)
+    block_bank_pressure = (
+        boss_like_combat
+        and block_retention_available
+        and affordable_block_now > 0
+        and (hp_ratio < 0.55 or incoming <= current_block + 4)
+        and not can_sweep_lethal
+    )
     baggage = hand_baggage_count(cards)
     payload_count = hand_playable_payload_count(cards, state)
     hand_end_damage = sum(card_hand_end_damage_amount(c) for c in cards)
@@ -4965,6 +5097,33 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         incoming_reduced_by = max(0, incoming - post_incoming)
         has_resource_followup = bool(card_draws_cards(card) or card_energy_gain(card, state) or card_star_gain(card) or generated_damage or orb_score >= 8 or combo_score >= 12)
         has_tactical_followup = bool(has_resource_followup or setup_score > 0)
+        retention_after_card = (
+            block_retention_active
+            or card_provides_block_retention(card)
+            or has_affordable_block_retention(cards, state, energy=remaining_energy, exclude=card)
+        )
+        if block_bank_pressure:
+            if card_provides_block_retention(card):
+                score += 60 + min(50, affordable_block_now * 3)
+                reasons.append("bank-block-retention")
+            if effective_block > 0 and retention_after_card:
+                retained_bonus = 18 + effective_block * (6.0 if hp_ratio < 0.35 else 4.0)
+                if incoming <= current_block:
+                    retained_bonus += 12
+                score += min(95, retained_bonus)
+                reasons.append("bank-boss-block")
+            if (
+                dmg > 0
+                and effective_block <= 0
+                and not is_lethal
+                and not reduces_incoming
+                and retention_after_card
+                and post_extra_block > 0
+                and remaining_energy < energy
+            ):
+                spend_penalty = 20 + min(85, post_extra_block * (6.0 if hp_ratio < 0.35 else 4.0))
+                score -= spend_penalty
+                reasons.append("bank-block-before-chip")
         target_pressure = enemy_pressure_damage(enemies[target]) if target is not None and 0 <= target < len(enemies) else 0
         followup_damage = (
             followup_damage_to_enemy(
@@ -5241,7 +5400,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
             setup_score=setup_score,
             state=state,
             current_block=current_block,
-        ):
+        ) and not (block_bank_pressure and retention_after_card):
             score -= 18 if not enemy_punishes_extra_card_play(state, card) else 35
             reasons.append("skip-covered-pure-block")
         if cost >= 3 and target is not None and target_hp is not None and dmg < target_hp:
@@ -5275,15 +5434,22 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     best_self_harm = is_bloodletting(card) or any(token in best_blob for token in ("lose hp", "失去", "自伤"))
     best_setup_score, _ = card_setup_value(card, state, cards)
     best_generated_damage = generated_card_damage(card)
+    best_orb_score, _ = orb_channel_value(card, state, incoming=incoming, current_block=current_block)
     best_resource_followup = bool(
         card_draws_cards(card)
         or card_energy_gain(card, state)
         or card_star_gain(card)
         or best_generated_damage
+        or best_orb_score >= 8
         or best_setup_score >= 12
     )
     best_cost = combat_card_energy_cost(card, state)
     best_remaining_energy = max(0, energy - best_cost + card_energy_gain(card, state))
+    best_retention_after_card = (
+        block_retention_active
+        or card_provides_block_retention(card)
+        or has_affordable_block_retention(cards, state, energy=best_remaining_energy, exclude=card)
+    )
     best_post_block = max(baseline_block if not best_block else 0, current_block + best_block)
     best_remaining_block = remaining_affordable_block(cards, card, remaining_energy=best_remaining_energy, state=state)
     best_preventable_gap = max(0, best_post_incoming - best_post_block - best_remaining_block)
@@ -5307,6 +5473,7 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     best_nonblock_immediate_value = bool(
         best_damage > 0
         or best_generated_damage > 0
+        or best_orb_score > 0
         or best_reduces_damage
         or best_setup_score > 0
         or card_draws_cards(card)
@@ -5403,6 +5570,16 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and not card_grants_combat_resource(card)
         and not card_has_hand_end_damage(card)
     )
+    best_zero_impact_play = (
+        best_damage <= 0
+        and best_block <= 0
+        and best_generated_damage <= 0
+        and best_orb_score <= 0
+        and best_setup_score <= 0
+        and not best_reduces_damage
+        and not best_nonblock_immediate_value
+        and not card_has_hand_end_damage(card)
+    )
     best_last_ditch_mitigation = bool(
         not best_self_harm
         and not card_has_consuming_or_harmful_cost(card, state)
@@ -5419,6 +5596,9 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
             )
         )
     )
+    if best_zero_impact_play and best_score < policy_number("combat.zero_impact_play_floor", 12.0):
+        return (
+         "end_turn", {}, f"skip zero-impact card score={best_score:.1f}")
     if (
         best_would_die
         and not can_sweep_lethal
@@ -5429,10 +5609,15 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
     ):
         return (
          "end_turn", {}, f"avoid doomed survival line score={best_score:.1f}")
-    if incoming <= current_block and best_is_pure_block and not best_safe_spend:
+    if (
+        incoming <= current_block
+        and best_is_pure_block
+        and not best_safe_spend
+        and not (block_bank_pressure and best_retention_after_card)
+    ):
         return (
          "end_turn", {}, f"incoming already blocked; skip unsafe pure block score={best_score:.1f}")
-    if incoming <= current_block and best_is_pure_block:
+    if incoming <= current_block and best_is_pure_block and not (block_bank_pressure and best_retention_after_card):
         return (
          "end_turn", {}, f"incoming already blocked; skip pure block score={best_score:.1f}")
     if passive_block and incoming <= baseline_block and best_is_pure_block and best_block <= passive_block:
@@ -5531,6 +5716,7 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
     )
     score = 0.0
     score += dmg * 1.6 + block * 1.1
+    body_slam_penalty, body_slam_reason = ironclad_body_slam_reward_penalty(cid_norm, plan, state)
     if "body_slam" in cid:
         score -= 18
     if any((k in blob for k in ('draw', '抽牌', 'energy', '能量', 'strength', '力量', 'vulnerable', '易伤'))):
@@ -5548,6 +5734,10 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
     elif cost == 0:
         score += 3
     reasons = []
+    if body_slam_penalty:
+        score -= body_slam_penalty
+        if body_slam_reason:
+            reasons.append(body_slam_reason)
     generated_damage = generated_card_damage(card)
     silent_damage_roles = roles & {"poison", "shiv", "strength", "vulnerable"}
     silent_damage_card = character_id == "SILENT" and (

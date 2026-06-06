@@ -360,6 +360,54 @@ def main() -> int:
     assert kwargs["card_index"] == 2, reason
     assert kwargs["target_index"] == 1, reason
 
+    ironclad_barricade_bank_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 3,
+            "player": {"block": 0},
+            "hand": [
+                {"index": 0, "id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "cost": 1, "block": 5, "playable": True},
+                {"index": 1, "id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "cost": 1, "damage": 6, "playable": True, "requires_target": True, "valid_target_indices": [0]},
+                {"index": 2, "id": "TRUE_GRIT", "name": "True Grit", "type": "Skill", "cost": 1, "block": 7, "playable": True},
+                {"index": 3, "id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "cost": 1, "block": 5, "playable": True},
+                {"index": 4, "id": "POMMEL_STRIKE", "name": "Pommel Strike", "type": "Attack", "cost": 1, "damage": 9, "playable": True, "requires_target": True, "valid_target_indices": [0], "description": "Deal 9 damage. Draw 1 card."},
+                {"index": 5, "id": "BARRICADE", "name": "Barricade", "type": "Power", "cost": 0, "playable": True, "description": "Block is not removed at the start of your turn."},
+            ],
+            "enemies": [{"index": 0, "id": "SOUL_FYSH", "hp": 126, "max_hp": 211, "intent": "BECKON_MOVE"}],
+        },
+        "run": {"character_id": "IRONCLAD", "floor": 17, "current_hp": 14, "max_hp": 80, "deck": [], "relics": [{"id": "BURNING_BLOOD"}]},
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(ironclad_barricade_bank_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] == 5, reason
+
+    ironclad_retained_block_state = {
+        **ironclad_barricade_bank_state,
+        "combat": {
+            **ironclad_barricade_bank_state["combat"],
+            "player": {"block": 0, "powers": [{"id": "BARRICADE", "name": "Barricade"}]},
+            "hand": ironclad_barricade_bank_state["combat"]["hand"][:5],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(ironclad_retained_block_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] in {0, 2, 3}, reason
+
+    zero_body_slam_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 1,
+            "player": {"block": 0},
+            "hand": [{"index": 0, "id": "BODY_SLAM", "name": "Body Slam", "type": "Attack", "cost": 1, "playable": True, "requires_target": True, "valid_target_indices": [0]}],
+            "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 50, "intent": "Attack 0"}],
+        },
+        "run": {"character_id": "IRONCLAD", "floor": 8, "current_hp": 70, "max_hp": 80, "deck": [], "relics": [{"id": "BURNING_BLOOD"}]},
+    }
+    combat_action, _, reason = ai.choose_combat_action(zero_body_slam_state)
+    assert combat_action == "end_turn", reason
+
     class FreshCombatClient:
         def __init__(self, state: dict) -> None:
             self.state = state
@@ -1140,6 +1188,33 @@ def main() -> int:
     pommel_score = ai.score_reward_card(early_pommel, ironclad_early_exhaust_state)
     assert pommel_score > dark_score, (pommel_score, dark_score, early_dark_embrace.get("_knowledge_reasons"))
     assert any("unsupported-exhaust-engine" in reason for reason in early_dark_embrace.get("_knowledge_reasons", []))
+
+    unsupported_body_slam = {
+        "id": "BODY_SLAM",
+        "name": "Body Slam",
+        "type": "Attack",
+        "rarity": "Common",
+        "cost": 1,
+        "description": "Deal damage equal to your Block.",
+    }
+    twin_strike = {
+        "id": "TWIN_STRIKE",
+        "name": "Twin Strike",
+        "type": "Attack",
+        "rarity": "Common",
+        "cost": 1,
+        "damage": 5,
+        "hits": 2,
+        "description": "Deal 5 damage twice.",
+    }
+    body_slam_score = ai.score_reward_card(unsupported_body_slam, ironclad_early_exhaust_state)
+    twin_strike_score = ai.score_reward_card(twin_strike, ironclad_early_exhaust_state)
+    assert twin_strike_score > body_slam_score, (
+        twin_strike_score,
+        body_slam_score,
+        unsupported_body_slam.get("_knowledge_reasons"),
+    )
+    assert any("unsupported-body-slam" in reason for reason in unsupported_body_slam.get("_knowledge_reasons", []))
 
     reward_selection_state = {
         "screen": "CARD_SELECTION",
@@ -1933,6 +2008,35 @@ def main() -> int:
     shop_action, kwargs, reason = ai.choose_shop_action(low_hp_survival_potion_shop_state)
     assert shop_action == "buy_potion", reason
     assert kwargs["option_index"] == 0
+
+    unsupported_body_slam_shop_state = {
+        **low_hp_survival_potion_shop_state,
+        "available_actions": ["buy_card", "close_shop_inventory"],
+        "run": {
+            **low_hp_survival_potion_shop_state["run"],
+            "current_hp": 72,
+            "gold": 120,
+        },
+        "shop": {
+            "items": [
+                {
+                    "index": 0,
+                    "price": 48,
+                    "card": {
+                        "id": "BODY_SLAM",
+                        "name": "Body Slam",
+                        "type": "Attack",
+                        "rarity": "Common",
+                        "cost": 1,
+                    },
+                    "name": "Body Slam",
+                    "type": "Card",
+                },
+            ],
+        },
+    }
+    shop_action, _, reason = ai.choose_shop_action(unsupported_body_slam_shop_state)
+    assert shop_action == "close_shop_inventory", reason
 
     high_hp_survival_potion_shop_state = {
         **low_hp_survival_potion_shop_state,

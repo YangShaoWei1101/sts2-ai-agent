@@ -53,6 +53,16 @@ IRONCLAD_SLOW_ENGINE_IDS = {
 }
 
 
+def ironclad_body_slam_support(block_shell: int, role_count: Callable[[str], int]) -> int:
+    return (
+        block_shell
+        + role_count("block_retention") * 2
+        + role_count("dexterity")
+        + role_count("weak")
+        + role_count("debuff")
+    )
+
+
 def ironclad_narrow_card_adjustment(
     card_id: object,
     roles: set[str] | frozenset[str],
@@ -70,10 +80,14 @@ def ironclad_narrow_card_adjustment(
     )
     exhaust_shell = archetype_count("ic_exhaust_engine") + role_count("exhaust")
     block_shell = archetype_count("ic_block_body_slam") + role_count("block")
+    body_slam_support = ironclad_body_slam_support(block_shell, role_count)
 
     if cid in IRONCLAD_RELIABLE_DAMAGE_IDS and real_damage_shell < 3:
         score += 12
         reasons.append("ironclad-needs-real-damage")
+    if cid == "BODY_SLAM" and body_slam_support < 7:
+        score -= 34
+        reasons.append("body-slam-without-block-engine")
     if cid in {"POMMEL_STRIKE", "UPPERCUT"}:
         score += 6
         reasons.append("ironclad-tempo-core")

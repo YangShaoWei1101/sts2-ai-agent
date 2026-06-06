@@ -81,6 +81,7 @@ def ironclad_narrow_card_adjustment(
     exhaust_shell = archetype_count("ic_exhaust_engine") + role_count("exhaust")
     block_shell = archetype_count("ic_block_body_slam") + role_count("block")
     body_slam_support = ironclad_body_slam_support(block_shell, role_count)
+    draw_shell = role_count("draw")
 
     if cid in IRONCLAD_RELIABLE_DAMAGE_IDS and real_damage_shell < 3:
         score += 12
@@ -88,6 +89,9 @@ def ironclad_narrow_card_adjustment(
     if cid == "BODY_SLAM" and body_slam_support < 7:
         score -= 34
         reasons.append("body-slam-without-block-engine")
+    if cid == "BATTLE_TRANCE" and draw_shell < 4:
+        score += 24 if draw_shell < 2 else 18
+        reasons.append("ironclad-premium-draw")
     if cid in {"POMMEL_STRIKE", "UPPERCUT"}:
         score += 6
         reasons.append("ironclad-tempo-core")

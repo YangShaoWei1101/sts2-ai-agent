@@ -1216,6 +1216,54 @@ def main() -> int:
     )
     assert any("unsupported-body-slam" in reason for reason in unsupported_body_slam.get("_knowledge_reasons", []))
 
+    ironclad_needs_draw_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["choose_reward_card", "skip_reward_cards"],
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 23,
+            "current_hp": 58,
+            "max_hp": 80,
+            "deck": (
+                [{"id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [{"id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(2)]
+                + [
+                    {"id": "BASH", "name": "Bash", "type": "Attack", "rarity": "Basic", "cost": 2, "upgraded": True},
+                    {"id": "CINDER", "name": "Cinder", "type": "Attack", "rarity": "Common", "cost": 2},
+                    {"id": "CINDER", "name": "Cinder", "type": "Attack", "rarity": "Common", "cost": 2},
+                    {"id": "POMMEL_STRIKE", "name": "Pommel Strike", "type": "Attack", "rarity": "Common", "cost": 1, "upgraded": True},
+                    {"id": "JUGGERNAUT", "name": "Juggernaut", "type": "Power", "rarity": "Rare", "cost": 2},
+                    {"id": "DOMINATE", "name": "Dominate", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                    {"id": "MOLTEN_FIST", "name": "Molten Fist", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "DOMINATE", "name": "Dominate", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                    {"id": "SHRUG_IT_OFF", "name": "Shrug It Off", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "SECOND_WIND", "name": "Second Wind", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                ]
+            ),
+            "relics": [
+                {"id": "BURNING_BLOOD", "name": "Burning Blood"},
+                {"id": "BAG_OF_PREPARATION", "name": "Bag of Preparation"},
+            ],
+        },
+    }
+    battle_trance = {
+        "index": 2,
+        "id": "BATTLE_TRANCE",
+        "name": "Battle Trance",
+        "type": "Skill",
+        "rarity": "Uncommon",
+        "cost": 0,
+        "description": "Draw 3 cards. You cannot draw additional cards this turn.",
+    }
+    battle_trance_score = ai.score_reward_card(battle_trance, ironclad_needs_draw_state)
+    battle_trance_threshold = ai.reward_take_threshold(ironclad_needs_draw_state, battle_trance, battle_trance_score)
+    assert battle_trance_score >= battle_trance_threshold, (
+        battle_trance_score,
+        battle_trance_threshold,
+        battle_trance.get("_knowledge_reasons"),
+    )
+    assert any("ironclad-premium-draw" in reason for reason in battle_trance.get("_knowledge_reasons", []))
+
     reward_selection_state = {
         "screen": "CARD_SELECTION",
         "available_actions": ["select_deck_card"],

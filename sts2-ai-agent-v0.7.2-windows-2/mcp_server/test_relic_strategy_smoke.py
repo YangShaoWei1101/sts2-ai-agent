@@ -1354,6 +1354,73 @@ def main() -> int:
     )
     assert ai.choose_reward_index(ironclad_boss_attack_bloat_state) == 2
 
+    ironclad_low_hp_self_damage_power_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["choose_reward_card", "skip_reward_cards"],
+        "selection": {
+            "cards": [
+                {
+                    "index": 0,
+                    "id": "CRIMSON_MANTLE",
+                    "name": "Crimson Mantle",
+                    "type": "Power",
+                    "rarity": "Rare",
+                    "cost": 1,
+                    "description": "At the start of your turn, lose 1 HP and gain 8 Block.",
+                },
+                {
+                    "index": 1,
+                    "id": "SHRUG_IT_OFF",
+                    "name": "Shrug It Off",
+                    "type": "Skill",
+                    "rarity": "Common",
+                    "cost": 1,
+                    "block": 8,
+                    "description": "Gain 8 Block. Draw 1 card.",
+                },
+                {
+                    "index": 2,
+                    "id": "STRIKE_IRONCLAD",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "damage": 6,
+                },
+            ]
+        },
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 7,
+            "current_hp": 18,
+            "max_hp": 80,
+            "deck": (
+                [{"id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [
+                    {"id": "BASH", "name": "Bash", "type": "Attack", "rarity": "Basic", "cost": 2},
+                    {"id": "WHIRLWIND", "name": "Whirlwind", "type": "Attack", "rarity": "Uncommon", "cost": -1},
+                    {"id": "BULLY", "name": "Bully", "type": "Attack", "rarity": "Common", "cost": 0},
+                    {"id": "DISMANTLE", "name": "Dismantle", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "DRUM_OF_BATTLE", "name": "Drum of Battle", "type": "Power", "rarity": "Uncommon", "cost": 1},
+                ]
+            ),
+            "relics": [{"id": "BURNING_BLOOD", "name": "Burning Blood"}],
+        },
+    }
+    mantle_card = ironclad_low_hp_self_damage_power_state["selection"]["cards"][0]
+    shrug_card = ironclad_low_hp_self_damage_power_state["selection"]["cards"][1]
+    mantle_score = ai.score_reward_card(mantle_card, ironclad_low_hp_self_damage_power_state)
+    shrug_score = ai.score_reward_card(shrug_card, ironclad_low_hp_self_damage_power_state)
+    assert mantle_score < ai.reward_take_threshold(
+        ironclad_low_hp_self_damage_power_state, mantle_card, mantle_score
+    ), (mantle_score, mantle_card.get("_knowledge_reasons"))
+    assert any("ironclad-low-hp-self-damage-power" in reason for reason in mantle_card.get("_knowledge_reasons", []))
+    assert shrug_score >= ai.reward_take_threshold(
+        ironclad_low_hp_self_damage_power_state, shrug_card, shrug_score
+    ), (shrug_score, shrug_card.get("_knowledge_reasons"))
+    assert ai.choose_reward_index(ironclad_low_hp_self_damage_power_state) == 1
+
     bing_bong_shop_state = {
         "screen": "SHOP",
         "available_actions": ["buy_card", "remove_card_at_shop", "close_shop_inventory"],
@@ -2880,6 +2947,51 @@ def main() -> int:
     combat_action, kwargs, reason = ai.choose_combat_action(critical_low_hp_chip_state)
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 0
+
+    ironclad_self_damage_power_under_pressure_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 1,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "CRIMSON_MANTLE",
+                    "name": "Crimson Mantle",
+                    "type": "Power",
+                    "rarity": "Rare",
+                    "cost": 1,
+                    "description": "At the start of your turn, lose 1 HP and gain 8 Block.",
+                    "playable": True,
+                    "requires_target": False,
+                },
+                {
+                    "index": 1,
+                    "id": "DEFEND_IRONCLAD",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "rarity": "Basic",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                    "requires_target": False,
+                },
+            ],
+            "enemies": [{"index": 0, "id": "SEAPUNK", "hp": 42, "intent": "Attack 14"}],
+        },
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 12,
+            "current_hp": 18,
+            "max_hp": 80,
+            "deck": ironclad_low_hp_self_damage_power_state["run"]["deck"],
+            "relics": [{"id": "BURNING_BLOOD", "name": "Burning Blood"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(ironclad_self_damage_power_under_pressure_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] == 1, reason
 
     partial_chip_state = {
         "screen": "COMBAT",

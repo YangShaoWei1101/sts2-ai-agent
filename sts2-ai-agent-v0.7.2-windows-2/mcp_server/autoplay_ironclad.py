@@ -2072,6 +2072,12 @@ IRONCLAD_BODY_SLAM_SUPPORT_IDS = frozenset({
     "TRUE_GRIT",
 })
 
+IRONCLAD_PERSISTENT_SELF_DAMAGE_POWER_IDS = frozenset({
+    "BRUTALITY",
+    "COMBUST",
+    "CRIMSON_MANTLE",
+})
+
 
 def ironclad_body_slam_support(plan: "Any", state: "dict[str, Any] | None" = None) -> int:
     support = 0
@@ -2089,6 +2095,60 @@ def ironclad_body_slam_support(plan: "Any", state: "dict[str, Any] | None" = Non
         support += profile.role("dexterity")
         support += profile.role("weak")
     return support
+
+
+def ironclad_self_damage_payoff_count(plan: "Any") -> int:
+    return (
+        int(plan.ids.get("RUPTURE", 0) or 0)
+        + int(plan.ids.get("BLOOD_FOR_BLOOD", 0) or 0)
+    )
+
+
+def card_is_persistent_self_damage_power(card: "dict[str, Any] | None") -> "bool":
+    if not isinstance(card, dict):
+        return False
+    cid = normalized_card_id(card)
+    if cid in IRONCLAD_PERSISTENT_SELF_DAMAGE_POWER_IDS:
+        return True
+    roles = known_card_roles(card)
+    if "self_damage" not in roles or known_card_type(card) != "power":
+        return False
+    blob = card_rules_blob(card)
+    return (
+        "lose" in blob
+        and "hp" in blob
+        and "whenever you lose hp" not in blob
+        and any(token in blob for token in ("start of your turn", "end of your turn"))
+    )
+
+
+def ironclad_persistent_self_damage_reward_penalty(
+    card: "dict[str, Any]",
+    plan: "Any",
+    state: "dict[str, Any]",
+    roles: "frozenset[str]",
+) -> "tuple[float, str | None]":
+    if str(getattr(plan, "character_id", "") or "").upper() != "IRONCLAD":
+        return 0.0, None
+    if "self_damage" not in roles or not card_is_persistent_self_damage_power(card):
+        return 0.0, None
+    hp, max_hp = player_hp(state)
+    hp_ratio = hp / max_hp if (hp and max_hp) else 1.0
+    payoff = ironclad_self_damage_payoff_count(plan)
+    penalty = 0.0
+    if hp_ratio < 0.55:
+        penalty += 36.0
+    if hp_ratio < 0.40:
+        penalty += 28.0
+    if payoff <= 0 and hp_ratio < 0.65:
+        penalty += 24.0
+    if plan.needs_block and hp_ratio < 0.55:
+        penalty += 16.0
+    if payoff <= 0 and not penalty:
+        penalty += 8.0
+    if payoff:
+        penalty -= min(24.0, payoff * 12.0)
+    return max(0.0, penalty), f"ironclad-low-hp-self-damage-power={penalty:.0f}"
 
 
 def ironclad_body_slam_reward_penalty(card_id: str, plan: "Any", state: "dict[str, Any]") -> "tuple[float, str | None]":
@@ -2441,6 +2501,17 @@ def card_setup_value(card: "dict[str, Any]", state: "dict[str, Any]", cards: "li
         if incoming > current_block + 10 and not block:
             score -= 20
             reasons.append("risky-power")
+        if card_is_persistent_self_damage_power(card):
+            payoff = ironclad_self_damage_payoff_count(plan)
+            if hp_ratio < 0.55 or incoming > current_block:
+                penalty = 38 + max(0, incoming - current_block) * (2.0 if hp_ratio < 0.55 else 1.0)
+                if payoff <= 0:
+                    penalty += 20
+                score -= min(95.0, penalty)
+                reasons.append("risky-self-damage-power")
+            elif payoff <= 0:
+                score -= 14
+                reasons.append("unsupported-self-damage-power")
 
     if is_block_retention_setup:
         retained_block = remaining_affordable_block(cards, card, remaining_energy=energy_after_card, state=state)
@@ -5165,6 +5236,22 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         incoming_reduced_by = max(0, incoming - post_incoming)
         has_resource_followup = bool(card_draws_cards(card) or card_energy_gain(card, state) or card_star_gain(card) or generated_damage or orb_score >= 8 or combo_score >= 12)
         has_tactical_followup = bool(has_resource_followup or setup_score > 0)
+        if card_is_persistent_self_damage_power(card):
+            payoff = ironclad_self_damage_payoff_count(deck_plan(state))
+            self_damage_penalty = 0.0
+            if hp_ratio < 0.55:
+                self_damage_penalty += 55.0
+            if hp_ratio < 0.40:
+                self_damage_penalty += 35.0
+            if incoming > current_block:
+                self_damage_penalty += min(55.0, (incoming - current_block) * (3.0 if hp_ratio < 0.55 else 1.5))
+            if payoff <= 0:
+                self_damage_penalty += 25.0
+            if self_damage_penalty:
+                score -= self_damage_penalty
+                reasons.append(f"persistent-self-damage-risk={self_damage_penalty:.0f}")
+                if is_setup_only and payoff <= 0 and not reduces_incoming:
+                    has_tactical_followup = False
         retention_after_card = (
             block_retention_active
             or card_provides_block_retention(card)
@@ -5806,6 +5893,11 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
         score -= body_slam_penalty
         if body_slam_reason:
             reasons.append(body_slam_reason)
+    self_damage_power_penalty, self_damage_power_reason = ironclad_persistent_self_damage_reward_penalty(card, plan, state, roles)
+    if self_damage_power_penalty:
+        score -= self_damage_power_penalty
+        if self_damage_power_reason:
+            reasons.append(self_damage_power_reason)
     generated_damage = generated_card_damage(card)
     silent_damage_roles = roles & {"poison", "shiv", "strength", "vulnerable"}
     silent_damage_card = character_id == "SILENT" and (

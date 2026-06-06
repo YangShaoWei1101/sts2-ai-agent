@@ -42,6 +42,12 @@ STATUS_BAGGAGE_IDS = {
     "WOUND",
 }
 
+PERSISTENT_SELF_DAMAGE_POWER_IDS = {
+    "BRUTALITY",
+    "COMBUST",
+    "CRIMSON_MANTLE",
+}
+
 BASIC_CARD_ID_ALIASES = {
     "STRIKE_R": "STRIKE_IRONCLAD",
     "DEFEND_R": "DEFEND_IRONCLAD",
@@ -222,6 +228,24 @@ def _spawns_status_baggage(card: dict[str, Any], text: str) -> bool:
         or ("burn" in text and ("discard" in text or "draw pile" in text))
         or ("dazed" in text and ("discard" in text or "draw pile" in text))
     )
+
+
+def _is_persistent_self_damage_power(known: KnownCard) -> bool:
+    if known.id in PERSISTENT_SELF_DAMAGE_POWER_IDS:
+        return True
+    description = known.description.lower()
+    return bool(
+        known.type.lower() == "power"
+        and "self_damage" in known.roles
+        and "lose" in description
+        and "hp" in description
+        and "whenever you lose hp" not in description
+        and any(token in description for token in ("at the start of your turn", "end of your turn"))
+    )
+
+
+def _self_damage_payoff_count(profile: DeckProfile) -> int:
+    return profile.ids.get("RUPTURE", 0) + profile.ids.get("BLOOD_FOR_BLOOD", 0)
 
 
 def _build_fallback_model() -> list[dict[str, Any]]:
@@ -657,6 +681,14 @@ class CardKnowledge:
         if "self_damage" in roles:
             hp_ratio = _hp_ratio(state)
             penalty = 12 if hp_ratio < 0.55 else 4
+            if _is_persistent_self_damage_power(known):
+                payoff = _self_damage_payoff_count(profile)
+                extra = 28 if hp_ratio < 0.55 else 10
+                if payoff <= 0:
+                    extra += 18
+                if plan.needs_block and hp_ratio < 0.45:
+                    extra += 14
+                penalty += extra
             score -= penalty
             reasons.append(f"self-damage-penalty={penalty}")
         if "status_pollution" in roles and profile.role("status_cleanup") == 0 and profile.archetype("de_status_engine") < 2:

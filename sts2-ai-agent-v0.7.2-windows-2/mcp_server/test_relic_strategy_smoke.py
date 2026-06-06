@@ -334,6 +334,17 @@ def main() -> int:
         "selection": {"prompt": "Draw pile", "max": 0, "min": 0, "cards": []},
         "run": {"character_id": "SILENT", "current_hp": 40, "max_hp": 70, "deck": [], "relics": []},
     }
+    readonly_select_alias_state = {
+        **fresh_selection_state,
+        "selection": {
+            "prompt": "[center]当抽牌堆耗尽时，这里的牌会被洗入抽牌堆。",
+            "max_select": 0,
+            "min_select": 0,
+            "cards": [],
+        },
+        "agent_view": {"selection": {}},
+    }
+    assert ai.readonly_card_selection_reason(readonly_select_alias_state) == "read-only card pile view"
     autoplayer = ai.Autoplayer(FreshCombatClient(fresh_selection_state), 0, 0, None, 1, 1, set(), {}, 0)
     fresh_action, fresh_kwargs, fresh_reason = autoplayer.combat_action_from_fresh_state(
         "play_card",

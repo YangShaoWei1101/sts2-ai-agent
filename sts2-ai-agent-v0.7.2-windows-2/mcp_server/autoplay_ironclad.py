@@ -7220,12 +7220,18 @@ def selection_context_blob(selection: "dict[str, Any]", agent_selection: "dict[s
 
 
 def selection_number(selection: "dict[str, Any]", agent_selection: "dict[str, Any]", key: "str") -> "int | None":
+    aliases = {
+        "min": ("min", "min_select", "min_selected", "min_cards"),
+        "max": ("max", "max_select", "max_selected", "max_cards"),
+        "selected": ("selected", "selected_count", "selected_cards"),
+    }.get(key, (key,))
     for source in (selection, agent_selection):
         if not isinstance(source, dict):
             continue
-        number = first_number(source.get(key))
-        if number is not None:
-            return number
+        for alias in aliases:
+            number = first_number(source.get(alias))
+            if number is not None:
+                return number
     return None
 
 
@@ -7557,6 +7563,40 @@ def close_readonly_card_selection_fallback() -> "bool":
                 break
 
         if not hwnd:
+            matches: list[int] = []
+            tokens = (
+                "slay",
+                "spire",
+                "sts2",
+                "127.0.0.1:8080",
+                "localhost:8080",
+                "杀戮",
+                "尖塔",
+                "一起玩",
+            )
+            enum_proc_type = ctypes.WINFUNCTYPE(ctypes.wintypes.BOOL, ctypes.wintypes.HWND, ctypes.wintypes.LPARAM)
+
+            def enum_proc(candidate_hwnd, _lparam):
+                try:
+                    if not user32.IsWindowVisible(candidate_hwnd):
+                        return True
+                    length = user32.GetWindowTextLengthW(candidate_hwnd)
+                    if length <= 0:
+                        return True
+                    buffer = ctypes.create_unicode_buffer(min(length + 1, 512))
+                    user32.GetWindowTextW(candidate_hwnd, buffer, len(buffer))
+                    title = buffer.value.strip().lower()
+                    if title and any(token in title for token in tokens):
+                        matches.append(int(candidate_hwnd))
+                except Exception:
+                    return True
+                return True
+
+            user32.EnumWindows(enum_proc_type(enum_proc), 0)
+            hwnd = matches[0] if matches else None
+
+        if not hwnd:
+            log("readonly card selection fallback found no game window")
             return False
         user32.ShowWindow(hwnd, 9)
         user32.SetForegroundWindow(hwnd)

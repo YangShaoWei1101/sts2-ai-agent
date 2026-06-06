@@ -280,6 +280,86 @@ def main() -> int:
     assert ai.enemy_pressure_damage({"id": "NIBBIT", "hp": 42, "intent": "BUTT_MOVE"}) >= 13
     assert ai.enemy_threat_score({"id": "EYE_WITH_TEETH", "hp": 6, "intent": "DISTRACT_MOVE"}) >= 28
 
+    ironclad_pressure_target_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 3,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "STRIKE_IRONCLAD",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": True,
+                    "valid_target_indices": [0, 1],
+                },
+                {
+                    "index": 1,
+                    "id": "ANGER",
+                    "name": "Anger",
+                    "type": "Attack",
+                    "cost": 0,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": True,
+                    "valid_target_indices": [0, 1],
+                },
+                {
+                    "index": 2,
+                    "id": "HEADBUTT",
+                    "name": "Headbutt",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 9,
+                    "playable": True,
+                    "requires_target": True,
+                    "valid_target_indices": [0, 1],
+                },
+                {
+                    "index": 3,
+                    "id": "STRIKE_IRONCLAD",
+                    "name": "Strike",
+                    "type": "Attack",
+                    "cost": 1,
+                    "damage": 6,
+                    "playable": True,
+                    "requires_target": True,
+                    "valid_target_indices": [0, 1],
+                },
+                {
+                    "index": 4,
+                    "id": "DEFEND_IRONCLAD",
+                    "name": "Defend",
+                    "type": "Skill",
+                    "cost": 1,
+                    "block": 5,
+                    "playable": True,
+                },
+            ],
+            "enemies": [
+                {"index": 0, "id": "CORPSE_SLUG", "hp": 9, "intent": "GOOP_MOVE"},
+                {"index": 1, "id": "CORPSE_SLUG", "hp": 14, "intent": "WHIP_SLAP_MOVE", "intents": [{"total_damage": 14}]},
+            ],
+        },
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 8,
+            "current_hp": 15,
+            "max_hp": 80,
+            "deck": [],
+            "relics": [{"id": "BURNING_BLOOD"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(ironclad_pressure_target_state)
+    assert combat_action == "play_card", reason
+    assert kwargs["card_index"] == 2, reason
+    assert kwargs["target_index"] == 1, reason
+
     class FreshCombatClient:
         def __init__(self, state: dict) -> None:
             self.state = state
@@ -295,6 +375,16 @@ def main() -> int:
         def execute_action(self, action: str, **kwargs) -> dict:
             self.executed.append((action, kwargs))
             return {"ok": True}
+
+    class SequencedClient(RecordingClient):
+        def __init__(self, states: list[dict]) -> None:
+            super().__init__(states[-1])
+            self.states = list(states)
+
+        def get_state(self) -> dict:
+            if len(self.states) > 1:
+                return self.states.pop(0)
+            return self.states[0]
 
     fresh_combat_state = {
         "screen": "COMBAT",
@@ -345,6 +435,30 @@ def main() -> int:
         "agent_view": {"selection": {}},
     }
     assert ai.readonly_card_selection_reason(readonly_select_alias_state) == "read-only card pile view"
+    headbutt_topdeck_selection_state = {
+        "screen": "CARD_SELECTION",
+        "in_combat": True,
+        "available_actions": ["select_deck_card"],
+        "selection": {
+            "kind": "deck_card_select",
+            "prompt": "选择一张牌放到你的抽牌堆顶。",
+            "min_select": 0,
+            "max_select": 0,
+            "selected_count": 0,
+            "cards": [
+                {"index": 0, "id": "BASH", "name": "Bash+", "type": "Attack", "cost": 2, "damage": 10, "upgraded": True},
+                {"index": 1, "id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "cost": 1, "block": 5},
+                {"index": 2, "id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "cost": 1, "damage": 6},
+            ],
+        },
+        "combat": {
+            "hand": [],
+            "enemies": [{"index": 0, "id": "DAMP_CULTIST", "hp": 37, "intent": "DARK_STRIKE_MOVE", "intents": [{"total_damage": 6}]}],
+        },
+        "run": {"character_id": "IRONCLAD", "current_hp": 12, "max_hp": 80, "deck": [], "relics": [{"id": "BURNING_BLOOD"}]},
+    }
+    assert ai.readonly_card_selection_reason(headbutt_topdeck_selection_state) is None
+    assert ai.choose_deck_selection_index(headbutt_topdeck_selection_state) == 0
     autoplayer = ai.Autoplayer(FreshCombatClient(fresh_selection_state), 0, 0, None, 1, 1, set(), {}, 0)
     fresh_action, fresh_kwargs, fresh_reason = autoplayer.combat_action_from_fresh_state(
         "play_card",
@@ -383,6 +497,22 @@ def main() -> int:
         assert readonly_client.executed == []
     finally:
         ai.close_readonly_card_selection_fallback = original_close_readonly
+
+    readonly_recovered_client = SequencedClient(
+        [
+            {
+                "screen": "COMBAT",
+                "available_actions": ["play_card", "end_turn"],
+                "combat": {"hand": [], "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 20, "intent": "Attack 0"}]},
+                "run": {"character_id": "IRONCLAD", "current_hp": 70, "max_hp": 80, "deck": [], "relics": []},
+            }
+        ]
+    )
+    autoplayer = ai.Autoplayer(readonly_recovered_client, 0, 0, None, 1, 1, set(), {}, 0)
+    autoplayer.readonly_selection_waits = 8
+    autoplayer.step(fresh_selection_state, ai.as_actions(fresh_selection_state))
+    assert readonly_recovered_client.executed == []
+    assert autoplayer.readonly_selection_waits == 0
 
     cold_snap_priority_state = {
         **minimal_zap_state,

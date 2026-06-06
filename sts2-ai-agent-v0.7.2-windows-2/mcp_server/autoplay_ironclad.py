@@ -1668,6 +1668,65 @@ def enemy_target_score(enemy, enemies, *, damage, lethal):
     return score
 
 
+def followup_damage_to_enemy(
+    cards: "list[dict[str, Any]]",
+    state: "dict[str, Any]",
+    *,
+    target: int,
+    exclude: "dict[str, Any] | None" = None,
+    remaining_energy: int,
+) -> "int":
+    enemies = (state.get("combat") or {}).get("enemies") or []
+    if target < 0 or target >= len(enemies) or not enemy_alive(enemies[target]):
+        return 0
+    total = 0
+    free_attacks = []
+    paid_attacks = []
+    for other in cards:
+        if exclude is not None and same_card_instance(other, exclude):
+            continue
+        if other.get("playable") is False or card_has_unmet_play_condition(other, state):
+            continue
+        damage = combat_card_damage(other, state) + generated_card_damage(other)
+        if damage <= 0:
+            continue
+        cost = combat_card_energy_cost(other, state)
+        if cost <= 0:
+            free_attacks.append(damage)
+        elif cost <= remaining_energy and target in valid_targets(other, enemies):
+            paid_attacks.append((damage, cost))
+
+    total += sum(free_attacks)
+    paid_attacks.sort(key=(lambda item: (item[0] / max(1, item[1]), item[0])), reverse=True)
+    energy_left = remaining_energy
+    for damage, cost in paid_attacks:
+        if cost > energy_left:
+            continue
+        total += damage
+        energy_left -= cost
+    return total
+
+
+def preferred_pressure_target(enemies: "list[dict[str, Any]]", damage: "int") -> "int | None":
+    alive = [(i, enemy) for i, enemy in enumerate(enemies) if enemy_alive(enemy)]
+    if not alive:
+        return None
+    attacking = [(i, enemy) for i, enemy in alive if enemy_pressure_damage(enemy) > 0]
+    if not attacking:
+        return None
+    if max(enemy_pressure_damage(enemy) for _, enemy in attacking) < 8:
+        return None
+    return max(
+        attacking,
+        key=(lambda p: (
+            enemy_pressure_damage(p[1]),
+            1 if damage >= enemy_hp(p[1]) else 0,
+            enemy_target_score(p[1], enemies, damage=damage, lethal=(damage >= enemy_hp(p[1]))),
+            -enemy_hp(p[1]),
+        )),
+    )[0]
+
+
 def estimate_card_damage(card: "dict[str, Any]") -> "int":
     blob = text_blob(card)
     cid = str(card.get("card_id") or card.get("id") or "").lower()
@@ -1833,6 +1892,9 @@ def choose_enemy_for_damage(enemies: "list[dict[str, Any]]", damage: "int") -> "
     alive = [(i, enemy) for i, enemy in enumerate(enemies) if enemy_alive(enemy)]
     if not alive:
         return
+    pressure_target = preferred_pressure_target(enemies, damage)
+    if pressure_target is not None:
+        return int(pressure_target)
     return max(alive,
       key=(lambda p: (
      enemy_target_score((p[1]),
@@ -4903,6 +4965,37 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         incoming_reduced_by = max(0, incoming - post_incoming)
         has_resource_followup = bool(card_draws_cards(card) or card_energy_gain(card, state) or card_star_gain(card) or generated_damage or orb_score >= 8 or combo_score >= 12)
         has_tactical_followup = bool(has_resource_followup or setup_score > 0)
+        target_pressure = enemy_pressure_damage(enemies[target]) if target is not None and 0 <= target < len(enemies) else 0
+        followup_damage = (
+            followup_damage_to_enemy(
+                cards,
+                state,
+                target=target,
+                exclude=card,
+                remaining_energy=remaining_energy,
+            )
+            if target is not None
+            else 0
+        )
+        if (
+            target_pressure >= 8
+            and dmg > 0
+            and target_hp is not None
+            and dmg < target_hp
+            and dmg + followup_damage >= target_hp
+        ):
+            pressure_setup_bonus = 28 + target_pressure * (3.0 if survival_pressure or hp_ratio < 0.55 else 1.8)
+            score += min(90, pressure_setup_bonus)
+            reasons.append("sets-up-pressure-kill")
+        if (
+            is_lethal
+            and target_pressure <= 0
+            and incoming >= 10
+            and preferred_pressure_target(enemies, dmg) is not None
+            and not can_sweep_lethal
+        ):
+            score -= min(90, 24 + incoming * (3.0 if survival_pressure or hp_ratio < 0.55 else 1.5))
+            reasons.append("lethal-wrong-threat")
         if card_has_hand_end_damage(card):
             avoided_end_damage = card_hand_end_damage_amount(card)
             clear_bonus = 38 + avoided_end_damage * (8.0 if hp_ratio < 0.55 else 5.5)
@@ -7247,6 +7340,15 @@ def readonly_card_selection_reason(state: "dict[str, Any]") -> "str | None":
     if "confirm_selection" in as_actions(state):
         return None
     context_blob = selection_context_blob(selection, agent_selection)
+    if any(token in context_blob for token in (
+        "choose a card to put on top",
+        "put on top of your draw pile",
+        "top of your draw pile",
+        "放到你的抽牌堆顶",
+        "放到抽牌堆顶",
+        "鎶界墝鍫嗛《",
+    )):
+        return None
     readonly_prompt = any(token in context_blob for token in (
         "draw pile",
         "discard pile",
@@ -7312,6 +7414,31 @@ def upgrade_selection_score(card: "dict[str, Any]", state: "dict[str, Any]") -> 
     return score
 
 
+def deck_manipulation_selection_score(card: "dict[str, Any]", state: "dict[str, Any]") -> "float":
+    dmg = estimate_card_damage(card)
+    block = estimate_card_block(card)
+    cost = card_cost(card)
+    score = dmg * 2.2 + block * 1.7 - cost * 1.5
+    cid = normalized_card_id(card)
+    if cid in {"BASH", "MOLTEN_FIST", "POMMEL_STRIKE", "SHRUG_IT_OFF", "BATTLE_TRANCE"}:
+        score += 28
+    if cid in {"DEFEND_IRONCLAD", "STRIKE_IRONCLAD"}:
+        score -= 8
+    if card_draws_cards(card):
+        score += 14
+    roles = known_card_roles(card)
+    if roles & {"vulnerable", "weak", "debuff"}:
+        score += 10
+    if roles & {"block", "defense"}:
+        score += 5
+    hp, max_hp = player_hp(state)
+    hp_ratio = hp / max_hp if (hp and max_hp) else 1.0
+    incoming = sum((enemy_pressure_damage(enemy) for enemy in (state.get("combat") or {}).get("enemies") or [] if enemy_alive(enemy)))
+    if hp_ratio < 0.45 and incoming:
+        score += block * 1.8
+    return score
+
+
 def choose_deck_selection_index(state: "dict[str, Any]", avoid: "set[int] | None"=None) -> "int":
     selection = state.get("selection") or {}
     agent_selection = (state.get("agent_view") or {}).get("selection") or {}
@@ -7332,9 +7459,17 @@ def choose_deck_selection_index(state: "dict[str, Any]", avoid: "set[int] | None
     discard_like = any(token in context_blob for token in ("discard", "弃牌", "丢弃"))
     remove_like = any(token in context_blob for token in ("remove", "transform", "lose", "exhaust", "purge", "forget", "移除", "删除", "变换", "变化"))
     upgrade_like = any(token in context_blob for token in ("upgrade", "smith", "升级", "锻造"))
+    deck_manip_like = any(token in context_blob for token in (
+        "choose a card to put on top",
+        "put on top of your draw pile",
+        "top of your draw pile",
+        "放到你的抽牌堆顶",
+        "放到抽牌堆顶",
+        "鎶界墝鍫嗛《",
+    ))
     in_combat_selection = bool(state.get("in_combat") or state.get("screen") == "COMBAT" or combat.get("enemies"))
     deck_like_selection = selection_cards_match_deck(selection_cards, deck if isinstance(deck, list) else [])
-    reward_pick_like = bool(selection_cards) and not in_combat_selection and not remove_like and not upgrade_like and not deck_like_selection
+    reward_pick_like = bool(selection_cards) and not in_combat_selection and not remove_like and not upgrade_like and not deck_manip_like and not deck_like_selection
     if reward_pick_like:
         discard_like = False
 
@@ -7359,6 +7494,8 @@ def choose_deck_selection_index(state: "dict[str, Any]", avoid: "set[int] | None
             score = remove_selection_score(card, state)
         elif upgrade_like:
             score = upgrade_selection_score(card, state)
+        elif deck_manip_like:
+            score = deck_manipulation_selection_score(card, state)
         elif reward_pick_like:
             score = score_reward_card(card, state)
         else:
@@ -7405,7 +7542,7 @@ def choose_deck_selection_index(state: "dict[str, Any]", avoid: "set[int] | None
             best_score = score
 
     chosen = int(best if best is not None else 0)
-    mode = "discard" if discard_like else "remove" if remove_like else "upgrade" if upgrade_like else "reward_pick" if reward_pick_like else "pick"
+    mode = "discard" if discard_like else "remove" if remove_like else "upgrade" if upgrade_like else "deck_manip" if deck_manip_like else "reward_pick" if reward_pick_like else "pick"
     journal_decision("deck_selection", state, {"idx": chosen, "score": round(best_score, 1), "mode": mode}, {"options": scored})
     return chosen
 
@@ -7596,18 +7733,23 @@ def close_readonly_card_selection_fallback() -> "bool":
             hwnd = matches[0] if matches else None
 
         if not hwnd:
-            log("readonly card selection fallback found no game window")
-            return False
-        user32.ShowWindow(hwnd, 9)
-        user32.SetForegroundWindow(hwnd)
-        time.sleep(0.15)
+            hwnd = user32.GetForegroundWindow()
+            if hwnd:
+                log("readonly card selection fallback using foreground window")
+            else:
+                log("readonly card selection fallback found no game window")
+        if hwnd:
+            user32.ShowWindow(hwnd, 9)
+            user32.SetForegroundWindow(hwnd)
+            time.sleep(0.15)
         vk_escape = 0x1B
         keyeventf_keyup = 0x0002
         user32.keybd_event(vk_escape, 0, 0, 0)
         time.sleep(0.05)
         user32.keybd_event(vk_escape, 0, keyeventf_keyup, 0)
-        user32.PostMessageW(hwnd, 0x0100, vk_escape, 0)
-        user32.PostMessageW(hwnd, 0x0101, vk_escape, 0)
+        if hwnd:
+            user32.PostMessageW(hwnd, 0x0100, vk_escape, 0)
+            user32.PostMessageW(hwnd, 0x0101, vk_escape, 0)
         return True
     except Exception as exc:
         try:
@@ -7616,6 +7758,55 @@ def close_readonly_card_selection_fallback() -> "bool":
         finally:
             exc = None
             del exc
+
+
+def close_readonly_card_selection(client: "Any | None" = None) -> "bool":
+    if client is not None:
+        try:
+            fresh_state = client.get_state()
+        except Exception as exc:
+            log(f"readonly card selection fresh check failed {type(exc).__name__}: {exc}")
+        else:
+            if readonly_card_selection_reason(fresh_state) is None:
+                return True
+            if "close_cards_view" in as_actions(fresh_state) and hasattr(client, "execute_action"):
+                try:
+                    client.execute_action(
+                        "close_cards_view",
+                        client_context={
+                            "source": "codex-autoplayer",
+                            "reason": "close read-only card pile view",
+                        },
+                    )
+                    return True
+                except Sts2ApiError as exc:
+                    log(f"readonly card selection api close unavailable {exc}")
+                except Exception as exc:
+                    log(f"readonly card selection api close failed {type(exc).__name__}: {exc}")
+    return close_readonly_card_selection_fallback()
+
+
+def wait_readonly_card_selection(client: "Any | None", timeout: "float" = 2.0) -> "bool":
+    if client is None or not hasattr(client, "wait_for_event"):
+        time.sleep(min(timeout, 0.5))
+        return False
+    try:
+        client.wait_for_event(
+            event_names=[
+                "screen_changed",
+                "available_actions_changed",
+                "player_action_window_opened",
+            ],
+            timeout=timeout,
+        )
+    except Exception as exc:
+        log(f"readonly card selection event wait failed {type(exc).__name__}: {exc}")
+        return False
+    try:
+        return readonly_card_selection_reason(client.get_state()) is None
+    except Exception as exc:
+        log(f"readonly card selection post-wait check failed {type(exc).__name__}: {exc}")
+        return False
 
 
 @dataclass
@@ -7816,11 +8007,11 @@ class Autoplayer:
             readonly_reason = readonly_card_selection_reason(state)
             if readonly_reason:
                 self.readonly_selection_waits += 1
-                if self.readonly_selection_waits <= 8:
+                if self.readonly_selection_waits <= 2:
                     log(f"readonly card selection waiting: {readonly_reason}", compact_state(state))
-                    time.sleep(0.5)
+                    wait_readonly_card_selection(self.client, timeout=2.0)
                     return
-                if close_readonly_card_selection_fallback():
+                if close_readonly_card_selection(self.client):
                     log(f"readonly card selection close fallback: {readonly_reason}", compact_state(state))
                     self.readonly_selection_waits = 0
                     time.sleep(1)
@@ -8007,11 +8198,11 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
         readonly_reason = readonly_card_selection_reason(state)
         if readonly_reason:
             self.readonly_selection_waits += 1
-            if self.readonly_selection_waits <= 8:
+            if self.readonly_selection_waits <= 2:
                 log(f"readonly card selection waiting: {readonly_reason}", compact_state(state))
-                time.sleep(0.5)
+                wait_readonly_card_selection(self.client, timeout=2.0)
                 return
-            if close_readonly_card_selection_fallback():
+            if close_readonly_card_selection(self.client):
                 log(f"readonly card selection close fallback: {readonly_reason}", compact_state(state))
                 self.readonly_selection_waits = 0
                 time.sleep(1)

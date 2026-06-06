@@ -5778,7 +5778,6 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         and not can_sweep_lethal
         and not has_revive_safety(state)
         and not best_doomed_followup_out
-        and not current_turn_damage_spend
         and not best_last_ditch_mitigation
     ):
         return (
@@ -8242,6 +8241,25 @@ def wait_readonly_card_selection(client: "Any | None", timeout: "float" = 2.0) -
         return False
 
 
+def handle_readonly_card_selection(
+    autoplayer: "Any",
+    state: "dict[str, Any]",
+    readonly_reason: "str",
+) -> "None":
+    autoplayer.readonly_selection_waits += 1
+    if autoplayer.readonly_selection_waits <= 1:
+        log(f"readonly card selection waiting: {readonly_reason}", compact_state(state))
+        if wait_readonly_card_selection(autoplayer.client, timeout=1.0):
+            autoplayer.readonly_selection_waits = 0
+        return
+    if close_readonly_card_selection(autoplayer.client):
+        log(f"readonly card selection close fallback: {readonly_reason}", compact_state(state))
+        autoplayer.readonly_selection_waits = 0
+        time.sleep(0.4)
+        return
+    raise ReadOnlyCardSelection(readonly_reason)
+
+
 @dataclass
 class Autoplayer:
     client: "Sts2Client"
@@ -8276,7 +8294,7 @@ class Autoplayer:
                             'reason':reason}})
 
     def combat_action_from_fresh_state(self, action, kwargs, reason):
-        if action != "play_card":
+        if action not in {"play_card", "end_turn"}:
             return action, kwargs, reason
         try:
             fresh_state = self.client.get_state()
@@ -8284,13 +8302,21 @@ class Autoplayer:
             log(f"fresh combat state unavailable {type(exc).__name__}: {exc}")
             return action, kwargs, reason
         fresh_actions = as_actions(fresh_state)
+        if fresh_state.get("screen") != "COMBAT" and not fresh_state.get("in_combat"):
+            log("fresh combat state changed before action", compact_state(fresh_state))
+            return "wait", {}, "fresh combat state changed before action"
+        if action == "end_turn" and "end_turn" not in fresh_actions:
+            log("fresh combat end turn unavailable", compact_state(fresh_state))
+            return "wait", {}, "fresh combat end turn unavailable"
+        if action == "end_turn" and "play_card" not in fresh_actions:
+            return "end_turn", {}, f"fresh-state {reason}"
         if "play_card" not in fresh_actions:
             if "close_cards_view" in fresh_actions:
                 return "close_cards_view", {}, "fresh combat state opened card view"
             if "end_turn" in fresh_actions and fresh_state.get("screen") == "COMBAT":
                 return "end_turn", {}, "fresh combat state lost play_card; end turn"
-            log("fresh combat state changed before play", compact_state(fresh_state))
-            return "wait", {}, "fresh combat state changed before play"
+            log("fresh combat state changed before action", compact_state(fresh_state))
+            return "wait", {}, "fresh combat state changed before action"
         fresh_action, fresh_kwargs, fresh_reason = choose_combat_action(fresh_state)
         if fresh_action == "play_card" and "card_index" in fresh_kwargs:
             stale_idx = kwargs.get("card_index")
@@ -8439,17 +8465,8 @@ class Autoplayer:
         if "select_deck_card" in actions:
             readonly_reason = readonly_card_selection_reason(state)
             if readonly_reason:
-                self.readonly_selection_waits += 1
-                if self.readonly_selection_waits <= 2:
-                    log(f"readonly card selection waiting: {readonly_reason}", compact_state(state))
-                    wait_readonly_card_selection(self.client, timeout=2.0)
-                    return
-                if close_readonly_card_selection(self.client):
-                    log(f"readonly card selection close fallback: {readonly_reason}", compact_state(state))
-                    self.readonly_selection_waits = 0
-                    time.sleep(1)
-                    return
-                raise ReadOnlyCardSelection(readonly_reason)
+                handle_readonly_card_selection(self, state, readonly_reason)
+                return
             self.readonly_selection_waits = 0
             selection = state.get("selection") or {}
             run = state.get("run") or {}
@@ -8630,17 +8647,8 @@ def _autoplayer_step(self: "Autoplayer", state: "dict[str, Any]", actions: "set[
     if "select_deck_card" in actions:
         readonly_reason = readonly_card_selection_reason(state)
         if readonly_reason:
-            self.readonly_selection_waits += 1
-            if self.readonly_selection_waits <= 2:
-                log(f"readonly card selection waiting: {readonly_reason}", compact_state(state))
-                wait_readonly_card_selection(self.client, timeout=2.0)
-                return
-            if close_readonly_card_selection(self.client):
-                log(f"readonly card selection close fallback: {readonly_reason}", compact_state(state))
-                self.readonly_selection_waits = 0
-                time.sleep(1)
-                return
-            raise ReadOnlyCardSelection(readonly_reason)
+            handle_readonly_card_selection(self, state, readonly_reason)
+            return
         self.readonly_selection_waits = 0
         selection = state.get("selection") or {}
         run = state.get("run") or {}

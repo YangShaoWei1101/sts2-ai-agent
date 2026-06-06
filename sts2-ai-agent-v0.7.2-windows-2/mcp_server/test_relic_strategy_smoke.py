@@ -516,6 +516,15 @@ def main() -> int:
     assert fresh_action == "wait", fresh_reason
     assert fresh_kwargs == {}, fresh_reason
 
+    autoplayer = ai.Autoplayer(FreshCombatClient(fresh_selection_state), 0, 0, None, 1, 1, set(), {}, 0)
+    fresh_action, fresh_kwargs, fresh_reason = autoplayer.combat_action_from_fresh_state(
+        "end_turn",
+        {},
+        "stale end turn",
+    )
+    assert fresh_action == "wait", fresh_reason
+    assert fresh_kwargs == {}, fresh_reason
+
     cards_view_state = {
         "screen": "CARDS_VIEW",
         "available_actions": ["close_cards_view"],
@@ -529,22 +538,33 @@ def main() -> int:
     assert close_client.executed[0][0] == "close_cards_view"
 
     original_close_readonly = ai.close_readonly_card_selection_fallback
+    original_wait_readonly = ai.wait_readonly_card_selection
     try:
         fallback_calls = []
+        wait_calls = []
 
         def fake_close_readonly() -> bool:
             fallback_calls.append(True)
             return True
 
+        def fake_wait_readonly(_client, timeout: float = 2.0) -> bool:
+            wait_calls.append(timeout)
+            return False
+
         ai.close_readonly_card_selection_fallback = fake_close_readonly
+        ai.wait_readonly_card_selection = fake_wait_readonly
         readonly_client = RecordingClient(fresh_selection_state)
         autoplayer = ai.Autoplayer(readonly_client, 0, 0, None, 1, 1, set(), {}, 0)
-        autoplayer.readonly_selection_waits = 8
+        autoplayer.step(fresh_selection_state, ai.as_actions(fresh_selection_state))
+        assert wait_calls == [1.0]
+        assert fallback_calls == []
+        assert autoplayer.readonly_selection_waits == 1
         autoplayer.step(fresh_selection_state, ai.as_actions(fresh_selection_state))
         assert fallback_calls
         assert readonly_client.executed == []
     finally:
         ai.close_readonly_card_selection_fallback = original_close_readonly
+        ai.wait_readonly_card_selection = original_wait_readonly
 
     readonly_recovered_client = SequencedClient(
         [
@@ -2862,7 +2882,7 @@ def main() -> int:
                     "requires_target": True,
                 }
             ],
-            "enemies": [{"index": 0, "id": "BOSS", "hp": 200, "intent": "Attack 30"}],
+            "enemies": [{"index": 0, "id": "BOSS", "hp": 200, "intent": "Attack 29"}],
         },
         "run": {
             "character_id": "IRONCLAD",
@@ -2875,6 +2895,17 @@ def main() -> int:
     combat_action, kwargs, reason = ai.choose_combat_action(desperation_damage_state)
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 0, reason
+
+    doomed_damage_state = {
+        **desperation_damage_state,
+        "combat": {
+            **desperation_damage_state["combat"],
+            "enemies": [{"index": 0, "id": "BOSS", "hp": 200, "intent": "Attack 40"}],
+        },
+    }
+    combat_action, kwargs, reason = ai.choose_combat_action(doomed_damage_state)
+    assert combat_action == "end_turn", reason
+    assert "doomed" in reason
 
     lizard_tail_spend_damage_state = {
         **desperation_damage_state,
@@ -3501,7 +3532,7 @@ def main() -> int:
     assert combat_action == "play_card", reason
     assert kwargs["card_index"] == 0, reason
 
-    doomed_safe_attack_state = {
+    doomed_nonlethal_attack_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],
         "combat": {
@@ -3539,9 +3570,9 @@ def main() -> int:
             "relics": [{"id": "RING_OF_THE_SNAKE", "name": "Ring of the Snake"}],
         },
     }
-    combat_action, kwargs, reason = ai.choose_combat_action(doomed_safe_attack_state)
-    assert combat_action == "play_card", reason
-    assert kwargs["card_index"] in {0, 1}, reason
+    combat_action, kwargs, reason = ai.choose_combat_action(doomed_nonlethal_attack_state)
+    assert combat_action == "end_turn", reason
+    assert "doomed" in reason
 
     zero_energy_x_setup_state = {
         "screen": "COMBAT",

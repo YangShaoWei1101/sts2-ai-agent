@@ -3505,6 +3505,74 @@ def silent_attack_reward_density_penalty(
     return penalty, reasons
 
 
+def ironclad_attack_reward_density_penalty(
+    card: "dict[str, Any]",
+    plan: "Any",
+    roles: "frozenset[str]",
+    cid_norm: str,
+    cost: int,
+    generated_damage: int=0,
+) -> "tuple[float, list[str]]":
+    if str(getattr(plan, "character_id", "") or "").upper() != "IRONCLAD":
+        return 0.0, []
+    if plan.card_count < 16:
+        return 0.0, []
+    if "attack" not in roles and not is_attack(card):
+        return 0.0, []
+
+    density_policy = policy_table("reward.density_penalty")
+    penalty = 0.0
+    reasons: list[str] = []
+    duplicate_count = int(plan.ids.get(cid_norm, 0) or 0)
+    real_cycle = bool("draw" in roles or card_draws_cards(card) or "energy" in roles)
+    strategic_roles = roles & {"aoe", "debuff", "strength", "vulnerable", "weak"}
+
+    if plan.attack_count >= plan.block_count + 2:
+        value = float(density_policy.get("attack_heavy_ratio", 12) or 12)
+        penalty += value
+        reasons.append(f"ironclad-attack-heavy={value:.0f}")
+    if plan.needs_draw and not real_cycle:
+        value = float(density_policy.get("attack_when_needs_engine", 14) or 14) + 10.0
+        penalty += value
+        reasons.append(f"ironclad-needs-draw-before-attack={value:.0f}")
+    if plan.needs_draw and plan.draw_count <= 0 and not real_cycle:
+        value = 18.0
+        penalty += value
+        reasons.append(f"ironclad-zero-draw={value:.0f}")
+    if duplicate_count:
+        value = float(density_policy.get("duplicate_attack_plan_card", 12) or 12)
+        value += min(18.0, max(0, duplicate_count - 1) * 6.0)
+        penalty += value
+        reasons.append(f"ironclad-duplicate-attack={value:.0f}")
+    if cost >= 2 and not real_cycle:
+        value = float(density_policy.get("expensive_attack_surplus", 16) or 16)
+        penalty += value
+        reasons.append(f"ironclad-expensive-attack={value:.0f}")
+    if cid_norm == "ANGER" and plan.card_count >= 18 and plan.needs_draw:
+        value = 16.0
+        penalty += value
+        reasons.append(f"ironclad-recursive-attack={value:.0f}")
+    if not strategic_roles and generated_damage <= 0 and not real_cycle and plan.attack_count >= 9:
+        value = float(density_policy.get("attack_surplus", 18) or 18)
+        penalty += value
+        reasons.append(f"ironclad-attack-surplus={value:.0f}")
+    if plan.wants_removal and plan.removable_count >= 8 and not real_cycle:
+        value = min(16.0, max(0, plan.removable_count - 6) * 4.0)
+        if value:
+            penalty += value
+            reasons.append(f"ironclad-dirty-deck={value:.0f}")
+    if plan.needs_damage:
+        penalty -= 8.0
+    if strategic_roles:
+        penalty -= 6.0
+    if real_cycle:
+        penalty -= 22.0
+    penalty = max(0.0, penalty)
+    if not penalty:
+        return 0.0, []
+    return penalty, reasons
+
+
 def reward_take_threshold(state, card, score):
     plan = deck_plan(state)
     table = policy_table("reward.take_threshold")
@@ -5986,6 +6054,18 @@ def score_reward_card(card: "dict[str, Any]", state: "dict[str, Any]") -> "float
         score -= density_penalty
         reasons.extend(density_reasons)
 
+    ironclad_density_penalty, ironclad_density_reasons = ironclad_attack_reward_density_penalty(
+        card,
+        plan,
+        roles,
+        cid_norm,
+        cost,
+        generated_damage,
+    )
+    if ironclad_density_penalty:
+        score -= ironclad_density_penalty
+        reasons.extend(ironclad_density_reasons)
+
     knowledge_score, knowledge_reasons = CARD_KNOWLEDGE.reward_modifier(card,
       state,
       damage=dmg,
@@ -6110,6 +6190,21 @@ def reward_take_threshold(state, card, score):
                 threshold += float(density_policy.get("pseudo_draw_attack", 18) or 18)
             if plan.wants_removal and plan.removable_count >= 8:
                 threshold += min(12.0, max(0, plan.removable_count - 6) * 3.0)
+        if (
+            str(getattr(plan, "character_id", "") or "").upper() == "IRONCLAD"
+            and plan.card_count >= 18
+            and "attack" in known.roles
+            and "draw" not in known.roles
+        ):
+            density_policy = policy_table("reward.density_penalty")
+            if plan.needs_draw:
+                threshold += float(density_policy.get("attack_when_needs_engine", 14) or 14)
+            if plan.draw_count <= 0:
+                threshold += 8.0
+            if card_cost(card) >= 2:
+                threshold += 6.0
+            if plan.ids.get(cid_norm, 0):
+                threshold += min(14.0, 4.0 + plan.ids.get(cid_norm, 0) * 4.0)
     removal_debt = plan.curse_status_count * 2 + max(0, plan.removable_count - 5)
     if removal_debt and not (matching_plan or utility or fills_need):
         threshold += min(18.0, 3.0 * removal_debt)

@@ -1264,6 +1264,96 @@ def main() -> int:
     )
     assert any("ironclad-premium-draw" in reason for reason in battle_trance.get("_knowledge_reasons", []))
 
+    ironclad_boss_attack_bloat_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["choose_reward_card", "skip_reward_cards"],
+        "selection": {
+            "cards": [
+                {
+                    "index": 0,
+                    "id": "ANGER",
+                    "name": "Anger",
+                    "type": "Attack",
+                    "rarity": "Common",
+                    "cost": 0,
+                    "damage": 6,
+                    "description": "Deal 6 damage. Add a copy of this card into your discard pile.",
+                },
+                {
+                    "index": 1,
+                    "id": "BLUDGEON",
+                    "name": "Bludgeon",
+                    "type": "Attack",
+                    "rarity": "Uncommon",
+                    "cost": 3,
+                    "damage": 32,
+                    "description": "Deal 32 damage.",
+                },
+                {
+                    "index": 2,
+                    "id": "BATTLE_TRANCE",
+                    "name": "Battle Trance",
+                    "type": "Skill",
+                    "rarity": "Uncommon",
+                    "cost": 0,
+                    "description": "Draw 3 cards. You cannot draw additional cards this turn.",
+                },
+            ]
+        },
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 15,
+            "current_hp": 57,
+            "max_hp": 87,
+            "deck": (
+                [{"id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(5)]
+                + [{"id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [
+                    {"id": "BASH", "name": "Bash", "type": "Attack", "rarity": "Basic", "cost": 2},
+                    {"id": "BARRICADE", "name": "Barricade", "type": "Power", "rarity": "Rare", "cost": 3},
+                    {"id": "ASHEN_STRIKE", "name": "Ashen Strike", "type": "Attack", "rarity": "Uncommon", "cost": 1},
+                    {"id": "TREMBLE", "name": "Tremble", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "CINDER", "name": "Cinder", "type": "Attack", "rarity": "Common", "cost": 2},
+                    {"id": "THUNDERCLAP", "name": "Thunderclap", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "TREMBLE", "name": "Tremble", "type": "Skill", "rarity": "Common", "cost": 1},
+                    {"id": "ANGER", "name": "Anger", "type": "Attack", "rarity": "Common", "cost": 0},
+                    {"id": "SETUP_STRIKE", "name": "Setup Strike", "type": "Attack", "rarity": "Common", "cost": 1},
+                    {"id": "EVIL_EYE", "name": "Evil Eye", "type": "Skill", "rarity": "Uncommon", "cost": 1},
+                    {"id": "BLUDGEON", "name": "Bludgeon", "type": "Attack", "rarity": "Uncommon", "cost": 3},
+                ]
+            ),
+            "relics": [
+                {"id": "BURNING_BLOOD", "name": "Burning Blood"},
+                {"id": "ARCANE_SCROLL", "name": "Arcane Scroll"},
+                {"id": "BOWLER_HAT", "name": "Bowler Hat"},
+                {"id": "STRAWBERRY", "name": "Strawberry"},
+            ],
+        },
+    }
+    bloat_plan = ai.deck_plan(ironclad_boss_attack_bloat_state)
+    assert bloat_plan.needs_draw and bloat_plan.draw_count == 0, bloat_plan.summary()
+    anger_card = ironclad_boss_attack_bloat_state["selection"]["cards"][0]
+    bludgeon_card = ironclad_boss_attack_bloat_state["selection"]["cards"][1]
+    boss_trance = ironclad_boss_attack_bloat_state["selection"]["cards"][2]
+    anger_score = ai.score_reward_card(anger_card, ironclad_boss_attack_bloat_state)
+    bludgeon_score = ai.score_reward_card(bludgeon_card, ironclad_boss_attack_bloat_state)
+    trance_score = ai.score_reward_card(boss_trance, ironclad_boss_attack_bloat_state)
+    assert anger_score < ai.reward_take_threshold(ironclad_boss_attack_bloat_state, anger_card, anger_score), (
+        anger_score,
+        anger_card.get("_knowledge_reasons"),
+    )
+    assert bludgeon_score < ai.reward_take_threshold(ironclad_boss_attack_bloat_state, bludgeon_card, bludgeon_score), (
+        bludgeon_score,
+        bludgeon_card.get("_knowledge_reasons"),
+    )
+    assert any("ironclad-needs-draw-before-attack" in reason for reason in anger_card.get("_knowledge_reasons", []))
+    assert any("ironclad-zero-draw" in reason for reason in bludgeon_card.get("_knowledge_reasons", []))
+    assert trance_score >= ai.reward_take_threshold(ironclad_boss_attack_bloat_state, boss_trance, trance_score), (
+        trance_score,
+        boss_trance.get("_knowledge_reasons"),
+    )
+    assert ai.choose_reward_index(ironclad_boss_attack_bloat_state) == 2
+
     bing_bong_shop_state = {
         "screen": "SHOP",
         "available_actions": ["buy_card", "remove_card_at_shop", "close_shop_inventory"],

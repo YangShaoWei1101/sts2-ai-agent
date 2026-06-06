@@ -965,6 +965,52 @@ def main() -> int:
     assert sweep_score > capacitor_score, (sweep_score, capacitor_score, capacitor.get("_knowledge_reasons"))
     assert any("slow-engine-density" in reason for reason in capacitor.get("_knowledge_reasons", []))
 
+    ironclad_early_exhaust_state = {
+        "screen": "CARD_SELECTION",
+        "available_actions": ["choose_reward_card", "skip_reward_cards"],
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 4,
+            "current_hp": 80,
+            "max_hp": 80,
+            "deck": (
+                [{"id": "STRIKE_IRONCLAD", "name": "Strike", "type": "Attack", "rarity": "Basic", "cost": 1} for _ in range(3)]
+                + [{"id": "DEFEND_IRONCLAD", "name": "Defend", "type": "Skill", "rarity": "Basic", "cost": 1} for _ in range(4)]
+                + [
+                    {"id": "BASH", "name": "Bash", "type": "Attack", "rarity": "Basic", "cost": 2},
+                    {"id": "ASHEN_STRIKE", "name": "Ashen Strike", "type": "Attack", "rarity": "Uncommon", "cost": 1},
+                    {"id": "POMMEL_STRIKE", "name": "Pommel Strike", "type": "Attack", "rarity": "Common", "cost": 1},
+                ]
+            ),
+            "relics": [
+                {"id": "BURNING_BLOOD", "name": "Burning Blood"},
+                {"id": "NEW_LEAF", "name": "New Leaf"},
+            ],
+        },
+    }
+    early_dark_embrace = {
+        "id": "DARK_EMBRACE",
+        "name": "Dark Embrace",
+        "type": "Power",
+        "rarity": "Rare",
+        "cost": 2,
+        "description": "Whenever a card is Exhausted, draw 1 card.",
+    }
+    early_pommel = {
+        "id": "POMMEL_STRIKE",
+        "name": "Pommel Strike",
+        "type": "Attack",
+        "rarity": "Common",
+        "cost": 1,
+        "damage": 9,
+        "cards_draw": 1,
+        "description": "Deal 9 damage. Draw 1 card.",
+    }
+    dark_score = ai.score_reward_card(early_dark_embrace, ironclad_early_exhaust_state)
+    pommel_score = ai.score_reward_card(early_pommel, ironclad_early_exhaust_state)
+    assert pommel_score > dark_score, (pommel_score, dark_score, early_dark_embrace.get("_knowledge_reasons"))
+    assert any("unsupported-exhaust-engine" in reason for reason in early_dark_embrace.get("_knowledge_reasons", []))
+
     reward_selection_state = {
         "screen": "CARD_SELECTION",
         "available_actions": ["select_deck_card"],

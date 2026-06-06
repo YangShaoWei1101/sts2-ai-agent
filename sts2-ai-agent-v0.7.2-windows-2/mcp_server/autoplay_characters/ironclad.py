@@ -86,9 +86,12 @@ def ironclad_narrow_card_adjustment(
     if cid in {"FEEL_NO_PAIN", "DARK_EMBRACE", "CORRUPTION"} and exhaust_shell >= 3:
         score += 10
         reasons.append("ironclad-exhaust-engine")
-    if cid in IRONCLAD_SLOW_ENGINE_IDS and exhaust_shell < 2 and real_damage_shell < 2:
-        score -= 28
+    if cid in IRONCLAD_SLOW_ENGINE_IDS and exhaust_shell < 3 and real_damage_shell < 3:
+        score -= 34
         reasons.append("ironclad-slow-engine-too-early")
+    if cid in {"DARK_EMBRACE", "CORRUPTION"} and exhaust_shell < 3:
+        score -= 18
+        reasons.append("ironclad-unsupported-exhaust-engine")
     if cid == "BARRICADE" and block_shell < 5:
         score -= 14
         reasons.append("barricade-needs-block-density")

@@ -4011,6 +4011,39 @@ def main() -> int:
     combat_action, _, reason = ai.choose_combat_action(empty_cycle_calculated_gamble_state)
     assert combat_action == "end_turn", reason
 
+    ironclad_no_energy_pressure_trance_state = {
+        "screen": "COMBAT",
+        "available_actions": ["play_card", "end_turn"],
+        "combat": {
+            "energy": 0,
+            "player": {"block": 0},
+            "hand": [
+                {
+                    "index": 0,
+                    "id": "BATTLE_TRANCE",
+                    "name": "Battle Trance",
+                    "type": "Skill",
+                    "rarity": "Uncommon",
+                    "cost": 0,
+                    "description": "Draw 3 cards. You cannot draw additional cards this turn.",
+                    "playable": True,
+                    "requires_target": False,
+                }
+            ],
+            "enemies": [{"index": 0, "id": "TEST_ENEMY", "hp": 80, "intent": "Attack 14"}],
+        },
+        "run": {
+            "character_id": "IRONCLAD",
+            "floor": 12,
+            "current_hp": 50,
+            "max_hp": 80,
+            "deck": [],
+            "relics": [{"id": "BURNING_BLOOD", "name": "Burning Blood"}],
+        },
+    }
+    combat_action, _, reason = ai.choose_combat_action(ironclad_no_energy_pressure_trance_state)
+    assert combat_action == "end_turn", reason
+
     pressure_anticipate_state = {
         "screen": "COMBAT",
         "available_actions": ["play_card", "end_turn"],

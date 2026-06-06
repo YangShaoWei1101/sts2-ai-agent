@@ -5802,6 +5802,24 @@ def choose_combat_action(state: "dict[str, Any]") -> "tuple[str, dict[str, int |
         return (
          "end_turn", {}, f"skip pressure setup with no immediate value score={best_score:.1f}")
     if (
+        damage_gap > 0
+        and best_score <= 0
+        and energy <= 0
+        and best_damage <= 0
+        and best_block <= 0
+        and best_generated_damage <= 0
+        and not best_reduces_damage
+        and not best_would_die
+        and not can_sweep_lethal
+        and (
+            card_draws_cards(card)
+            or best_setup_score > 0
+            or card_generates_combat_cards(card)
+        )
+    ):
+        return (
+         "end_turn", {}, f"skip no-energy pressure draw score={best_score:.1f}")
+    if (
         best_score <= damage_floor
         and not best_safe_spend
         and not (play_any_damage and lethal_allowed_damage)
